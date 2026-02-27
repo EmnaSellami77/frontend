@@ -2,40 +2,71 @@ import { Link } from "react-router-dom";
 
 function HomePage() {
   return (
-    <div className="container-fluid vh-100">
-      <div className="row h-100">
+    <div className="container-fluid vh-100 p-0">
+      <div className="row g-0 h-100">
 
-        {/* IT CONSULTANT */}
-        <div className="col-md-6 d-flex flex-column justify-content-center align-items-center bg-primary text-white">
-          <h1 className="mb-4">IT Consultant</h1>
-          <p className="mb-4 text-center w-75">
-            Accédez au système pour consulter et gérer les tickets IT.
-          </p>
+        {/* SIDEBAR */}
+        <div className="col-md-3 d-flex flex-column justify-content-between p-4 text-white"
+             style={{
+               background: "linear-gradient(135deg, #1e3c72, #2a5298)"
+             }}>
+          
+          <div>
+            <h2 className="fw-bold mb-4">IT Support System</h2>
+            <p>
+              Système intelligent de classification et gestion des tickets IT.
+            </p>
+          </div>
 
-          <div className="d-flex gap-3">
-            <Link to="/login-it" className="btn btn-light btn-lg">
-              Login
-            </Link>
-            <Link to="/register-it" className="btn btn-outline-light btn-lg">
-              Sign Up
-            </Link>
+          <div>
+            <p className="small">© 2026 PFE Project</p>
           </div>
         </div>
 
-        {/* DEVELOPPEUR */}
-        <div className="col-md-6 d-flex flex-column justify-content-center align-items-center bg-dark text-white">
-          <h1 className="mb-4">Développeur</h1>
-          <p className="mb-4 text-center w-75">
-            Accédez à votre espace pour traiter et classifier les tickets.
-          </p>
+        {/* MAIN CONTENT */}
+        <div className="col-md-9 d-flex align-items-center justify-content-center bg-light">
 
-          <div className="d-flex gap-3">
-            <Link to="/login-dev" className="btn btn-warning btn-lg">
-              Login
-            </Link>
-            <Link to="/register-dev" className="btn btn-outline-warning btn-lg">
-              Sign Up
-            </Link>
+          <div className="row w-100 px-5">
+
+            {/* IT CONSULTANT CARD */}
+            <div className="col-md-6 mb-4">
+              <div className="card shadow-lg border-0 h-100 text-center p-4">
+                <h3 className="mb-3 text-primary fw-bold">IT Consultant</h3>
+                <p className="text-muted">
+                  Consultez, créez et suivez les tickets IT.
+                </p>
+
+                <div className="mt-4 d-flex justify-content-center gap-3">
+                  <Link to="/login" className="btn btn-primary px-4">
+                    Login
+                  </Link>
+
+                  <Link to="/register" className="btn btn-outline-primary px-4">
+                    Sign Up
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* DEVELOPPEUR CARD */}
+            <div className="col-md-6 mb-4">
+              <div className="card shadow-lg border-0 h-100 text-center p-4">
+                <h3 className="mb-3 text-success fw-bold">Développeur</h3>
+                <p className="text-muted">
+                  Traitez et analysez les tickets avec intelligence.
+                </p>
+
+                <div className="mt-4 d-flex justify-content-center gap-3">
+                  <Link to="/dashboard" className="btn btn-success px-4">
+                    Login
+                  </Link>
+                  <Link to="/register-dev" className="btn btn-outline-success px-4">
+                    Sign Up
+                  </Link>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 

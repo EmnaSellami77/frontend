@@ -6,7 +6,8 @@ import Tickets from "./pages/Tickets";
 import Settings from "./pages/Settings";
 import Footer from "./components/Footer";
 import HomePage from "./pages/HomePage";
-
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 function App() {
   return (
     <Router>
@@ -33,6 +34,8 @@ function App() {
 
         <Route path="/tickets" element={<Tickets />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
 
       <Footer />
