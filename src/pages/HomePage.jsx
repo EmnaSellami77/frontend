@@ -37,10 +37,11 @@ function HomePage() {
                 </p>
 
                 <div className="mt-4 d-flex justify-content-center gap-3">
-                  <Link to="/dashboard" className="btn btn-primary px-4">
+                  <Link to="/login" className="btn btn-primary px-4">
                     Login
                   </Link>
-                  <Link to="/register-it" className="btn btn-outline-primary px-4">
+
+                  <Link to="/register" className="btn btn-outline-primary px-4">
                     Sign Up
                   </Link>
                 </div>
