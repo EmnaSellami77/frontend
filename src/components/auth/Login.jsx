@@ -1,14 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Test from './components/Test';
+import Login from './components/auth/Login';
 
 function App() {
   return (
     <Router>
       <div>
-        <h1>Test App</h1>
         <Routes>
-          <Route path="/" element={<Test />} />
+          <Route path="/" element={<Login onLogin={(role) => console.log('Login avec rôle:', role)} />} />
         </Routes>
       </div>
     </Router>
