@@ -5,23 +5,36 @@ import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
 import Settings from "./pages/Settings";
 import Footer from "./components/Footer";
+import HomePage from "./pages/HomePage";
 
 function App() {
   return (
     <Router>
       <Navbar />
-      <div className="container-fluid">
-        <div className="row">
-          <Sidebar />
-          <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/tickets" element={<Tickets />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
+
+      <Routes>
+        {/* Page d'accueil */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* Pages après connexion */}
+        <Route
+          path="/dashboard"
+          element={
+            <div className="container-fluid">
+              <div className="row">
+                <Sidebar />
+                <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
+                  <Dashboard />
+                </main>
+              </div>
+            </div>
+          }
+        />
+
+        <Route path="/tickets" element={<Tickets />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+
       <Footer />
     </Router>
   );
