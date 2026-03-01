@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("IT");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
@@ -25,14 +25,10 @@ function Login() {
 
     setError("");
 
-    // Simulation authentification
-    localStorage.setItem("role", role);
+    // Simulation authentification IT
+    localStorage.setItem("role", "IT");
 
-    if (role === "IT") {
-      navigate("/dashboard");
-    } else {
-      navigate("/tickets");
-    }
+    navigate("/dashboard");
   };
 
   return (
@@ -43,6 +39,8 @@ function Login() {
         {error && <div className="alert alert-danger">{error}</div>}
 
         <form onSubmit={handleSubmit}>
+          
+          {/* EMAIL */}
           <div className="mb-3">
             <label>Email</label>
             <input
@@ -54,36 +52,35 @@ function Login() {
             />
           </div>
 
-          <div className="mb-3">
+          {/* PASSWORD */}
+          <div className="mb-3 position-relative">
             <label>Password</label>
-            <div className="input-group">
-              <input
-                type={showPassword ? "text" : "password"}
-                className="form-control"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-              />
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? "🙈" : "👁️"}
-              </button>
-            </div>
+            <input
+              type={showPassword ? "text" : "password"}
+              className="form-control"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "15px",
+                top: "38px",
+                cursor: "pointer",
+                color: "#6c757d",
+              }}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
           </div>
 
-          <div className="mb-3">
-            <label>Rôle</label>
-            <select
-              className="form-select"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option value="IT">IT Consultant</option>
-              <option value="DEV">Développeur</option>
-            </select>
+          {/* MOT DE PASSE OUBLIÉ */}
+          <div className="text-end mb-3">
+            <Link to="/forgot-password" style={{ fontSize: "14px" }}>
+              Mot de passe oublié ?
+            </Link>
           </div>
 
           <button className="btn btn-primary w-100">Login</button>

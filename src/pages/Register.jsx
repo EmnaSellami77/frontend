@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 function Register() {
   const [form, setForm] = useState({
@@ -8,6 +9,7 @@ function Register() {
     role: "IT",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -40,30 +42,47 @@ function Register() {
           <input
             className="form-control mb-3"
             placeholder="Full Name"
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            value={form.name}
+            onChange={(e) =>
+              setForm({ ...form, name: e.target.value })
+            }
           />
 
           <input
             type="email"
             className="form-control mb-3"
             placeholder="Email"
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            value={form.email}
+            onChange={(e) =>
+              setForm({ ...form, email: e.target.value })
+            }
           />
 
-          <input
-            type="password"
-            className="form-control mb-3"
-            placeholder="Password"
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-          />
-
-          <select
-            className="form-select mb-3"
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-          >
-            <option value="IT">IT Consultant</option>
-            <option value="DEV">Développeur</option>
-          </select>
+          {/* PASSWORD PROFESSIONNEL */}
+          <div className="mb-3 position-relative">
+            <label>Password</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              className="form-control"
+              value={form.password}
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value })
+              }
+              placeholder="Password"
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "15px",
+                top: "38px",
+                cursor: "pointer",
+                color: "#6c757d",
+              }}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
+          </div>
 
           <button className="btn btn-success w-100">Sign Up</button>
         </form>
