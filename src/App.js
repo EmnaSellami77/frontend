@@ -14,6 +14,8 @@ import DeveloperSignup from "./pages/DeveloperSignup";
 import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
 import Settings from "./pages/Settings";
+import DeveloperDashboard from "./pages/DeveloperDashboard";
+
 
 function App() {
   return (
@@ -56,6 +58,8 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/developer/login" element={<DeveloperLogin />} />
         <Route path="/register-dev" element={<DeveloperSignup />} />
+        <Route path="/developer/dashboard" element={<DeveloperDashboard />} />
+
       </Routes>
 
       {/* Footer visible partout */}
