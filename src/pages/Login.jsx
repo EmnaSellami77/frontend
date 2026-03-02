@@ -1,69 +1,83 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-
   const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!email || !password) {
-      setError("Veuillez remplir tous les champs.");
+    if (!form.email || !form.password) {
+      setError("Tous les champs sont obligatoires.");
+      setSuccess("");
       return;
     }
 
-    if (!email.includes("@")) {
-      setError("Email invalide.");
-      return;
-    }
-
+    // Simulation login réussi
     setError("");
+    setSuccess("Connexion réussie !");
 
-    // Simulation authentification IT
-    localStorage.setItem("role", "IT");
-
-    navigate("/dashboard");
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 1500);
   };
 
   return (
     <div className="vh-100 d-flex justify-content-center align-items-center animated-bg">
-      <div className="card p-4 shadow-lg fade-in" style={{ width: "400px" }}>
+      <div
+        className="card p-4 shadow-lg"
+        style={{ width: "400px", borderRadius: "15px" }}
+      >
         <h3 className="text-center mb-4">Login</h3>
 
         {error && <div className="alert alert-danger">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
 
-        <form onSubmit={handleSubmit}>
-          
+        <form onSubmit={handleSubmit} autoComplete="off">
           {/* EMAIL */}
           <div className="mb-3">
             <label>Email</label>
             <input
               type="email"
               className="form-control"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter email"
+              value={form.email}
+              autoComplete="email"
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
             />
           </div>
 
           {/* PASSWORD */}
           <div className="mb-3 position-relative">
             <label>Password</label>
+
             <input
-              type={showPassword ? "text" : "password"}
-              className="form-control"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              type={isPasswordVisible ? "text" : "password"}
+              className="form-control pe-5"
               placeholder="Password"
+              value={form.password}
+              autoComplete="current-password"
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value })
+              }
             />
+
             <span
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={() =>
+                setIsPasswordVisible(!isPasswordVisible)
+              }
               style={{
                 position: "absolute",
                 right: "15px",
@@ -72,18 +86,24 @@ function Login() {
                 color: "#6c757d",
               }}
             >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
+              {isPasswordVisible ? <FaEyeSlash /> : <FaEye />}
             </span>
           </div>
 
-          {/* MOT DE PASSE OUBLIÉ */}
+          {/* FORGOT PASSWORD */}
           <div className="text-end mb-3">
-            <Link to="/forgot-password" style={{ fontSize: "14px" }}>
+            <Link
+              to="/forgot-password"
+              className="text-decoration-none"
+              style={{ fontSize: "14px" }}
+            >
               Mot de passe oublié ?
             </Link>
           </div>
 
-          <button className="btn btn-primary w-100">Login</button>
+          <button className="btn btn-primary w-100">
+            Login
+          </button>
         </form>
       </div>
     </div>

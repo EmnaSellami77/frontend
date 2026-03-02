@@ -15,6 +15,8 @@ import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
 import Settings from "./pages/Settings";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
+import ForgotPassword from "./pages/ForgotPassword";
+
 
 
 function App() {
@@ -59,6 +61,7 @@ function App() {
         <Route path="/developer/login" element={<DeveloperLogin />} />
         <Route path="/register-dev" element={<DeveloperSignup />} />
         <Route path="/developer/dashboard" element={<DeveloperDashboard />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
       </Routes>
 

@@ -5,6 +5,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard-container">
+   
       <h2 className="mb-4">Dashboard</h2>
       
       <h4 className="mb-4">Bienvenue {role === 'developer' ? 'Développeur' : 'Consultant IT'}</h4>
