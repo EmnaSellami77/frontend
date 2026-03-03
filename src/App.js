@@ -1,3 +1,4 @@
+// App.js
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Layout
@@ -17,17 +18,12 @@ import Settings from "./pages/Settings";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 
-
-
 function App() {
   return (
     <Router>
-
-      {/* Navbar visible partout */}
       <Navbar />
 
       <Routes>
-
         {/* ================= HOME ================= */}
         <Route path="/" element={<HomePage />} />
 
@@ -39,14 +35,13 @@ function App() {
         <Route path="/developer/login" element={<DeveloperLogin />} />
         <Route path="/developer/register" element={<DeveloperSignup />} />
 
-        {/* ================= DASHBOARD (WITH SIDEBAR) ================= */}
+        {/* ================= IT DASHBOARD ================= */}
         <Route
           path="/dashboard"
           element={
             <div className="container-fluid">
               <div className="row">
                 <Sidebar />
-
                 <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
                   <Dashboard />
                 </main>
@@ -55,19 +50,19 @@ function App() {
           }
         />
 
+        {/* ================= DEVELOPER DASHBOARD ================= */}
+        <Route
+          path="/developer/dashboard"
+          element={<DeveloperDashboard />}
+        />
+
         {/* ================= OTHER PAGES ================= */}
         <Route path="/tickets" element={<Tickets />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/developer/login" element={<DeveloperLogin />} />
-        <Route path="/register-dev" element={<DeveloperSignup />} />
-        <Route path="/developer/dashboard" element={<DeveloperDashboard />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
       </Routes>
 
-      {/* Footer visible partout */}
       <Footer />
-
     </Router>
   );
 }
