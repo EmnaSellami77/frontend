@@ -1,7 +1,8 @@
 function Footer() {
   return (
     <footer className="bg-dark text-white text-center p-3 mt-4">
-      © 2026 PFE - IT Support Classification System
+      © 2026 IT Support Classification System | Capgemini Engineering
+     
     </footer>
   );
 }
