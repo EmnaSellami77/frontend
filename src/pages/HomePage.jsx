@@ -9,7 +9,7 @@ function HomePage() {
       className="container-fluid vh-100 p-0"
       style={{
         fontFamily: "'Segoe UI', sans-serif",
-        background: dark ? "#0f172a" : "#f1f5f9",
+        background: dark ? "#0f172a" : "#f8fafc",
         transition: "background 0.4s ease",
       }}
     >
@@ -19,9 +19,7 @@ function HomePage() {
         <div
           className="col-md-3 d-flex flex-column justify-content-between p-4 text-white"
           style={{
-            background: dark
-              ? "linear-gradient(135deg, #0f172a, #1e3a5f)"
-              : "linear-gradient(135deg, #1e3c72, #2a5298)",
+            background: dark ? "#0f172a" : "#2563eb",
             position: "relative",
             transition: "background 0.4s ease",
           }}
@@ -39,7 +37,7 @@ function HomePage() {
               borderRadius: "999px",
               border: "none",
               cursor: "pointer",
-              background: dark ? "#facc15" : "rgba(255,255,255,0.25)",
+              background: dark ? "#facc15" : "rgba(255,255,255,0.3)",
               display: "flex",
               alignItems: "center",
               padding: "2px 4px",
@@ -50,7 +48,7 @@ function HomePage() {
                 width: "18px",
                 height: "18px",
                 borderRadius: "50%",
-                background: dark ? "#1e3c72" : "#fff",
+                background: dark ? "#2563eb" : "#fff",
                 transform: dark ? "translateX(20px)" : "translateX(0px)",
                 transition: "0.3s",
                 fontSize: "11px",
@@ -64,13 +62,13 @@ function HomePage() {
 
           <div>
             <h2 className="fw-bold mb-4">IT Support System</h2>
-            <p style={{ opacity: 0.85 }}>
-              Système intelligent de classification et gestion des tickets IT.
+            <p style={{ opacity: 0.9 }}>
+              Platforme intelligente de gestion et classification automatique des tickets IT basée sur l'IA.
             </p>
           </div>
 
           <div>
-            <p className="small mb-0" style={{ opacity: 0.6 }}>
+            <p className="small mb-0" style={{ opacity: 0.7 }}>
               © 2026 PFE Project
             </p>
           </div>
@@ -87,8 +85,8 @@ function HomePage() {
                   display: "inline-block",
                   padding: "6px 18px",
                   borderRadius: "999px",
-                  background: dark ? "#1e293b" : "#e0e7ff",
-                  color: dark ? "#60a5fa" : "#3b82f6",
+                  background: dark ? "#1e293b" : "#dbeafe",
+                  color: "#2563eb",
                   fontSize: "14px",
                   letterSpacing: "1px",
                   fontWeight: "600",
@@ -100,22 +98,15 @@ function HomePage() {
 
               <h1
                 style={{
-                  fontSize: "52px",
+                  fontSize: "50px",
                   fontWeight: "800",
                   lineHeight: "1.2",
-                  color: dark ? "#f8fafc" : "#0f172a",
+                  color: dark ? "#f1f5f9" : "#0f172a",
                 }}
               >
                 Gérez vos tickets IT <br />
                 avec{" "}
-                <span
-                  style={{
-                    background:
-                      "linear-gradient(90deg, #3b82f6, #6366f1)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
+                <span style={{ color: "#2563eb" }}>
                   intelligence
                 </span>
               </h1>
@@ -150,7 +141,7 @@ function HomePage() {
                 >
                   <h3
                     className="mb-3 fw-bold"
-                    style={{ color: dark ? "#60a5fa" : "#0d6efd" }}
+                    style={{ color: "#2563eb" }}
                   >
                     IT Consultant
                   </h3>
@@ -182,18 +173,18 @@ function HomePage() {
                 >
                   <h3
                     className="mb-3 fw-bold"
-                    style={{ color: dark ? "#34d399" : "#198754" }}
+                    style={{ color: "#2563eb" }}
                   >
                     Développeur
                   </h3>
                   <p style={{ color: dark ? "#94a3b8" : "#6c757d" }}>
-                    Traitez et analysez les tickets avec intelligence.
+                    Traitez et analysez les tickets IT.
                   </p>
                   <div className="mt-4 d-flex justify-content-center gap-3">
-                    <Link to="/developer/login" className="btn btn-success px-4">
+                    <Link to="/developer/login" className="btn btn-primary px-4">
                       Login
                     </Link>
-                    <Link to="/register-dev" className="btn btn-outline-success px-4">
+                    <Link to="/register-dev" className="btn btn-outline-primary px-4">
                       Sign Up
                     </Link>
                   </div>
@@ -212,7 +203,7 @@ function HomePage() {
         }
         .card-hover:hover {
           transform: translateY(-8px);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
       `}</style>
     </div>
