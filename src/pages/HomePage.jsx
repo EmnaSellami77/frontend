@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import capLogo from "../cap.png";
 
 function HomePage() {
   const [dark, setDark] = useState(false);
@@ -11,8 +12,24 @@ function HomePage() {
         fontFamily: "'Segoe UI', sans-serif",
         background: dark ? "#0f172a" : "#f8fafc",
         transition: "background 0.4s ease",
+        position: "relative",
       }}
     >
+      {/* ===== LOGO TOP RIGHT (NO FRAME) ===== */}
+      <img
+        src={capLogo}
+        alt="CAP Enterprise Logo"
+        style={{
+          position: "absolute",
+          top: "25px",
+          right: "40px",
+          width: "160px",
+          height: "auto",
+          objectFit: "contain",
+          zIndex: 10,
+        }}
+      />
+
       <div className="row g-0 h-100">
 
         {/* ===== SIDEBAR ===== */}
@@ -20,8 +37,8 @@ function HomePage() {
           className="col-md-3 d-flex flex-column justify-content-between p-4 text-white"
           style={{
             background: dark ? "#0f172a" : "#2563eb",
-            position: "relative",
             transition: "background 0.4s ease",
+            position: "relative",
           }}
         >
           {/* Dark Mode Toggle */}
@@ -63,13 +80,14 @@ function HomePage() {
           <div>
             <h2 className="fw-bold mb-4">IT Support System</h2>
             <p style={{ opacity: 0.9 }}>
-              Platforme intelligente de gestion et classification automatique des tickets IT basée sur l'IA.
+              Plateforme intelligente de gestion et classification automatique
+              des tickets IT basée sur l'IA.
             </p>
           </div>
 
           <div>
             <p className="small mb-0" style={{ opacity: 0.7 }}>
-              © 2026 PFE Project
+              © 2026 CAP Enterprise — PFE Project
             </p>
           </div>
         </div>
@@ -78,7 +96,7 @@ function HomePage() {
         <div className="col-md-9 d-flex align-items-center justify-content-center">
           <div className="w-100 px-5 text-center">
 
-            {/* ===== HERO SECTION ===== */}
+            {/* HERO SECTION */}
             <div className="mb-5">
               <span
                 style={{
@@ -98,17 +116,14 @@ function HomePage() {
 
               <h1
                 style={{
-                  fontSize: "50px",
+                  fontSize: "48px",
                   fontWeight: "800",
                   lineHeight: "1.2",
                   color: dark ? "#f1f5f9" : "#0f172a",
                 }}
               >
                 Gérez vos tickets IT <br />
-                avec{" "}
-                <span style={{ color: "#2563eb" }}>
-                  intelligence
-                </span>
+                avec <span style={{ color: "#2563eb" }}>intelligence</span>
               </h1>
 
               <p
@@ -124,7 +139,7 @@ function HomePage() {
               </p>
             </div>
 
-            {/* ===== CARDS SECTION ===== */}
+            {/* CARDS SECTION */}
             <div className="row">
 
               {/* IT CONSULTANT */}
@@ -139,10 +154,7 @@ function HomePage() {
                     borderRadius: "16px",
                   }}
                 >
-                  <h3
-                    className="mb-3 fw-bold"
-                    style={{ color: "#2563eb" }}
-                  >
+                  <h3 className="mb-3 fw-bold" style={{ color: "#2563eb" }}>
                     IT Consultant
                   </h3>
                   <p style={{ color: dark ? "#94a3b8" : "#6c757d" }}>
@@ -171,10 +183,7 @@ function HomePage() {
                     borderRadius: "16px",
                   }}
                 >
-                  <h3
-                    className="mb-3 fw-bold"
-                    style={{ color: "#2563eb" }}
-                  >
+                  <h3 className="mb-3 fw-bold" style={{ color: "#2563eb" }}>
                     Développeur
                   </h3>
                   <p style={{ color: dark ? "#94a3b8" : "#6c757d" }}>
