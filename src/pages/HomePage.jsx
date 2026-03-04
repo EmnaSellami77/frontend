@@ -85,11 +85,6 @@ function HomePage() {
             </p>
           </div>
 
-          <div>
-            <p className="small mb-0" style={{ opacity: 0.7 }}>
-              © 2026 CAP Enterprise — PFE Project
-            </p>
-          </div>
         </div>
 
         {/* ===== MAIN CONTENT ===== */}
