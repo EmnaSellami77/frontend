@@ -55,11 +55,15 @@ function App() {
           path="/developer/dashboard"
           element={<DeveloperDashboard />}
         />
-
+        <Route
+          path="/IT/dashboard"
+          element={<Dashboard />}
+        />
         {/* ================= OTHER PAGES ================= */}
         <Route path="/tickets" element={<Tickets />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        
       </Routes>
 
       <Footer />
