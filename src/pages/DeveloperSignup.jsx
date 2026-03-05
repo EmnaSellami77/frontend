@@ -63,6 +63,15 @@ export default function DeveloperSignup() {
 
   return (
     <div style={styles.container}>
+      {/* Bouton retour */}
+      <button onClick={() => navigate(-1)} style={styles.backButton}>
+        <svg style={styles.backIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+        Retour
+      </button>
+
       {/* Carte d'inscription */}
       <div style={styles.card}>
         {/* En-tête avec logo */}
@@ -251,11 +260,36 @@ const styles = {
   container: {
     minHeight: "100vh",
     display: "flex",
+    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f9fafb",
     padding: "20px",
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    position: "relative",
+  },
+  backButton: {
+    position: "absolute",
+    top: "20px",
+    left: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "8px 16px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "10px",
+    color: "#475569",
+    fontSize: "0.95rem",
+    fontWeight: "500",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    zIndex: 10,
+  },
+  backIcon: {
+    width: "18px",
+    height: "18px",
+    stroke: "currentColor",
   },
   card: {
     backgroundColor: "#ffffff",
@@ -435,16 +469,6 @@ const styles = {
     position: "relative",
     textAlign: "center",
     margin: "20px 0",
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      top: "50%",
-      left: 0,
-      right: 0,
-      height: "1px",
-      backgroundColor: "#e2e8f0",
-      zIndex: 1,
-    },
   },
   separatorText: {
     position: "relative",
@@ -487,6 +511,36 @@ style.textContent = `
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+  }
+  
+  .back-button:hover {
+    background-color: #f8fafc;
+    transform: translateX(-2px);
+  }
+  
+  input:hover {
+    border-color: #94a3b8;
+  }
+  
+  input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: #ffffff;
+  }
+  
+  button[type="submit"]:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -5px rgba(59, 130, 246, 0.5);
+  }
+  
+  button[type="submit"]:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .social-button:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
   }
 `;
 document.head.appendChild(style);
