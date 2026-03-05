@@ -296,7 +296,7 @@ export default function Settings() {
                   const isConfirm = name === "confirmPassword";
                   const isNew = name === "newPassword";
                   const match = passwords.confirmPassword === passwords.newPassword && passwords.confirmPassword !== "";
-                  const mismatch = passwords.confirmPassword !== "" && !match;
+                 
 
                   return (
                     <div key={name}>

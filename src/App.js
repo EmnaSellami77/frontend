@@ -1,4 +1,3 @@
-// IMPORTATION UNIQUE DE REACT
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Layout Components
@@ -44,28 +43,20 @@ function App() {
 
         {/* ============ DEVELOPER AUTH ROUTES ============ */}
         <Route path="/developer/login" element={<DeveloperLogin />} />
-        
-        {/* Route pour /register-dev (CELLE QUE VOUS UTILISEZ) */}
-        <Route path="/register-dev" element={<DeveloperSignup />} />
-        
-        {/* Autres routes pour compatibilité */}
         <Route path="/developer/register" element={<DeveloperSignup />} />
         <Route path="/developer/signup" element={<DeveloperSignup />} />
+        <Route path="/register-dev" element={<DeveloperSignup />} />
         
-        <Route path="/developer/forgot-password" element={<ForgotPassword role="developer" />} />
-
         {/* ============ IT CONSULTANT PROTECTED ROUTES ============ */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute allowedRole="it">
-              <div className="container-fluid">
-                <div className="row">
-                  <Sidebar />
-                  <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
-                    <Dashboard />
-                  </main>
-                </div>
+              <div style={{ display: "flex" }}>
+                <Sidebar />
+                <main style={{ flex: 1, padding: "20px" }}>
+                  <Dashboard />
+                </main>
               </div>
             </ProtectedRoute>
           }
@@ -75,13 +66,11 @@ function App() {
           path="/tickets"
           element={
             <ProtectedRoute allowedRole="it">
-              <div className="container-fluid">
-                <div className="row">
-                  <Sidebar />
-                  <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
-                    <Tickets />
-                  </main>
-                </div>
+              <div style={{ display: "flex" }}>
+                <Sidebar />
+                <main style={{ flex: 1, padding: "20px" }}>
+                  <Tickets />
+                </main>
               </div>
             </ProtectedRoute>
           }
@@ -91,13 +80,11 @@ function App() {
           path="/settings"
           element={
             <ProtectedRoute allowedRole="it">
-              <div className="container-fluid">
-                <div className="row">
-                  <Sidebar />
-                  <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
-                    <Settings />
-                  </main>
-                </div>
+              <div style={{ display: "flex" }}>
+                <Sidebar />
+                <main style={{ flex: 1, padding: "20px" }}>
+                  <Settings />
+                </main>
               </div>
             </ProtectedRoute>
           }
@@ -129,7 +116,6 @@ function App() {
             <div style={styles.notFound}>
               <h1>404</h1>
               <p>Page non trouvée</p>
-              <p>L'URL "{window.location.pathname}" n'existe pas</p>
               <a href="/" style={styles.homeLink}>Retour à l'accueil</a>
             </div>
           }
