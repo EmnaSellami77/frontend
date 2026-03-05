@@ -1,140 +1,72 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-export default function DeveloperLogin() {
+function DeveloperLogin() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      alert("Veuillez remplir tous les champs");
+
+    if (!form.email || !form.password) {
+      setError("Tous les champs sont obligatoires.");
       return;
     }
-    // Simulation login
+
+    localStorage.setItem("role", "developer");
+
     navigate("/developer/dashboard");
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Login</h2>
+    <div className="vh-100 d-flex justify-content-center align-items-center animated-bg">
+      <div className="card p-4 shadow-lg" style={{ width: "400px", borderRadius: "15px" }}>
+        <h3 className="text-center mb-4">Developer Login</h3>
 
-        <form onSubmit={handleLogin}>
-          <label style={styles.label}>Email</label>
-          <input
-            type="email"
-            placeholder="Entrer votre email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-          />
+        {error && <div className="alert alert-danger">{error}</div>}
 
-          <label style={styles.label}>Password</label>
-          <div style={styles.passwordContainer}>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label>Email</label>
             <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Entrer votre mot de passe"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.passwordInput}
+              type="email"
+              className="form-control"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
+
+          <div className="mb-3 position-relative">
+            <label>Password</label>
+            <input
+              type={isPasswordVisible ? "text" : "password"}
+              className="form-control pe-5"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
             <span
-              onClick={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
+              onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+              style={{ position: "absolute", right: "15px", top: "38px", cursor: "pointer" }}
             >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
+              {isPasswordVisible ? <FaEyeSlash /> : <FaEye />}
             </span>
           </div>
 
-          <div style={styles.forgot}>
-            <Link to="/forgot-password">Mot de passe oublié ?</Link>
+          <div className="text-end mb-3">
+            <Link to="/forgot-password?role=developer">
+              Mot de passe oublié ?
+            </Link>
           </div>
 
-          <button type="submit" style={styles.button}>
-            Login
-          </button>
+          <button className="btn btn-primary w-100">Login</button>
         </form>
       </div>
     </div>
   );
 }
 
-const styles = {
-  page: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    background: "#1a2a34", // fond sombre comme sur l'image
-    fontFamily: "Arial, sans-serif",
-  },
-  card: {
-    backgroundColor: "white",
-    padding: "40px",
-    borderRadius: "12px",
-    width: "350px",
-    boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
-    textAlign: "center",
-  },
-  title: {
-    marginBottom: "30px",
-    fontSize: "24px",
-    fontWeight: "bold",
-    color: "#111",
-  },
-  label: {
-    display: "block",
-    textAlign: "left",
-    marginBottom: "5px",
-    fontWeight: "500",
-  },
-  input: {
-    width: "100%",
-    padding: "12px",
-    marginBottom: "20px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-    fontSize: "14px",
-  },
-  passwordContainer: {
-    display: "flex",
-    alignItems: "center",
-    border: "1px solid #ccc",
-    borderRadius: "6px",
-    marginBottom: "10px",
-  },
-  passwordInput: {
-    flex: 1,
-    padding: "12px",
-    border: "none",
-    outline: "none",
-    borderRadius: "6px",
-    fontSize: "14px",
-  },
-  eyeIcon: {
-    padding: "0 10px",
-    cursor: "pointer",
-    color: "#555",
-  },
-  forgot: {
-    textAlign: "right",
-    marginBottom: "20px",
-    fontSize: "13px",
-  },
-  button: {
-    width: "100%",
-    padding: "12px",
-    backgroundColor: "#007bff", // bleu comme sur l'image
-    border: "none",
-    borderRadius: "6px",
-    color: "white",
-    fontWeight: "bold",
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-};
+export default DeveloperLogin;

@@ -43,6 +43,10 @@ export default function DeveloperDashboard() {
     setPriority("");
   };
 
+  const handleSettings = () => {
+    navigate("/developer/settings");
+  };
+
   const handleLogout = () => {
     navigate("/");
   };
@@ -59,10 +63,10 @@ export default function DeveloperDashboard() {
           stats.devops,
         ],
         backgroundColor: [
-          "#3b82f6", // Bleu professionnel pour Frontend
-          "#10b981", // Vert émeraude pour Backend
-          "#8b5cf6", // Violet pour Database
-          "#f59e0b", // Orange pour DevOps
+          "#3b82f6",
+          "#10b981",
+          "#8b5cf6",
+          "#f59e0b",
         ],
         borderRadius: 6,
       },
@@ -121,14 +125,26 @@ export default function DeveloperDashboard() {
           </svg>
           <h2 style={styles.title}>Developer Dashboard</h2>
         </div>
-        <button onClick={handleLogout} style={styles.logout}>
-          <svg style={styles.logoutIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          Déconnexion
-        </button>
+        
+        <div style={styles.headerRight}>
+          {/* NOUVEAU BOUTON SETTINGS */}
+          <button onClick={handleSettings} style={styles.settingsButton}>
+            <svg style={styles.settingsIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            Settings
+          </button>
+
+          <button onClick={handleLogout} style={styles.logout}>
+            <svg style={styles.logoutIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Déconnexion
+          </button>
+        </div>
       </div>
 
       <div style={styles.container}>
@@ -157,10 +173,10 @@ export default function DeveloperDashboard() {
               style={styles.select}
             >
               <option value="">-- Sélectionner un type --</option>
-              <option value="frontend">Frontend</option>
-              <option value="backend">Backend</option>
-              <option value="database">Database</option>
-              <option value="devops">DevOps</option>
+              <option value="frontend">🎨 Frontend</option>
+              <option value="backend">⚙️ Backend</option>
+              <option value="database">🗄️ Database</option>
+              <option value="devops">🚀 DevOps</option>
             </select>
           </div>
 
@@ -292,6 +308,11 @@ const styles = {
     alignItems: "center",
     gap: "12px",
   },
+  headerRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
   logoIcon: {
     width: "32px",
     height: "32px",
@@ -304,6 +325,27 @@ const styles = {
     fontWeight: "600",
     color: "#ffffff",
     letterSpacing: "-0.5px",
+  },
+  // NOUVEAU STYLE POUR LE BOUTON SETTINGS
+  settingsButton: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "10px 20px",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    border: "1px solid rgba(255, 255, 255, 0.2)",
+    borderRadius: "12px",
+    color: "#ffffff",
+    fontSize: "0.95rem",
+    fontWeight: "500",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    backdropFilter: "blur(10px)",
+  },
+  settingsIcon: {
+    width: "18px",
+    height: "18px",
+    stroke: "currentColor",
   },
   logout: {
     display: "flex",
