@@ -296,7 +296,6 @@ export default function Settings() {
                   const isConfirm = name === "confirmPassword";
                   const isNew = name === "newPassword";
                   const match = passwords.confirmPassword === passwords.newPassword && passwords.confirmPassword !== "";
-                 
 
                   return (
                     <div key={name}>
@@ -398,3 +397,13 @@ export default function Settings() {
     </div>
   );
 }
+
+// Ajout de l'animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`;
+document.head.appendChild(style);
