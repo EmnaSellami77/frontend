@@ -40,8 +40,6 @@ function DeveloperSignup() {
 
     setError("");
     setSuccess("Compte développeur créé avec succès !");
-
-    // Stocker le rôle
     localStorage.setItem("role", "DEV");
 
     setTimeout(() => {
@@ -50,8 +48,8 @@ function DeveloperSignup() {
   };
 
   return (
-    <div className="vh-100 d-flex justify-content-center align-items-center animated-bg">
-      <div className="card shadow-lg p-4 fade-in" style={{ width: "420px" }}>
+    <div className="vh-100 d-flex justify-content-center align-items-center">
+      <div className="card shadow-lg p-4" style={{ width: "420px" }}>
         <h3 className="text-center mb-4 text-success">
           Developer Sign Up
         </h3>
@@ -65,7 +63,7 @@ function DeveloperSignup() {
             <input
               type="text"
               className="form-control"
-              placeholder="Votre nom"
+              value={form.name}
               onChange={(e) =>
                 setForm({ ...form, name: e.target.value })
               }
@@ -77,7 +75,7 @@ function DeveloperSignup() {
             <input
               type="email"
               className="form-control"
-              placeholder="developer@email.com"
+              value={form.email}
               onChange={(e) =>
                 setForm({ ...form, email: e.target.value })
               }
@@ -90,7 +88,7 @@ function DeveloperSignup() {
               <input
                 type={showPassword ? "text" : "password"}
                 className="form-control"
-                placeholder="Mot de passe"
+                value={form.password}
                 onChange={(e) =>
                   setForm({ ...form, password: e.target.value })
                 }
@@ -110,7 +108,7 @@ function DeveloperSignup() {
             <input
               type={showPassword ? "text" : "password"}
               className="form-control"
-              placeholder="Confirmer mot de passe"
+              value={form.confirmPassword}
               onChange={(e) =>
                 setForm({ ...form, confirmPassword: e.target.value })
               }
