@@ -10,11 +10,12 @@ export default function DeveloperSettings() {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-    notifications: true // true = activé, false = désactivé
+    notifications: true
   });
 
   const [activeTab, setActiveTab] = useState("profile");
   const [successMessage, setSuccessMessage] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,6 +36,7 @@ export default function DeveloperSettings() {
     e.preventDefault();
     setSuccessMessage("Modifications enregistrées avec succès !");
     setTimeout(() => setSuccessMessage(""), 3000);
+    setIsEditing(false);
     
     setFormData(prev => ({
       ...prev,
@@ -42,6 +44,13 @@ export default function DeveloperSettings() {
       newPassword: "",
       confirmPassword: ""
     }));
+  };
+
+  const handleDeleteAccount = () => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) {
+      // Logique de suppression du compte
+      navigate("/");
+    }
   };
 
   const handleLogout = () => {
@@ -96,7 +105,7 @@ export default function DeveloperSettings() {
         </div>
       )}
 
-      {/* Navigation par onglets - uniquement Profil et Sécurité */}
+      {/* Navigation par onglets */}
       <div style={styles.tabsContainer}>
         <button
           onClick={() => setActiveTab("profile")}
@@ -130,7 +139,7 @@ export default function DeveloperSettings() {
       <div style={styles.container}>
         <form onSubmit={handleSubmit} style={styles.formCard}>
           
-          {/* BOUTON NOTIFICATIONS - Au-dessus du profil */}
+          {/* BOUTON NOTIFICATIONS */}
           <div style={styles.notificationsSection}>
             <div style={styles.notificationsHeader}>
               <div style={styles.notificationsInfo}>
@@ -171,6 +180,18 @@ export default function DeveloperSettings() {
                   <circle cx="12" cy="7" r="4" />
                 </svg>
                 <h3 style={styles.cardTitle}>Informations du profil</h3>
+                {!isEditing && (
+                  <button 
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    style={styles.editButton}
+                  >
+                    <svg style={styles.editIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                    </svg>
+                    Modifier
+                  </button>
+                )}
               </div>
 
               <div style={styles.avatarSection}>
@@ -179,13 +200,15 @@ export default function DeveloperSettings() {
                     {formData.username.charAt(0).toUpperCase()}
                   </span>
                 </div>
-                <button type="button" style={styles.avatarButton}>
-                  <svg style={styles.avatarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
-                  Changer la photo
-                </button>
+                {isEditing && (
+                  <button type="button" style={styles.avatarButton}>
+                    <svg style={styles.avatarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                    Changer la photo
+                  </button>
+                )}
               </div>
 
               <div style={styles.formGroup}>
@@ -202,6 +225,7 @@ export default function DeveloperSettings() {
                   value={formData.username}
                   onChange={handleChange}
                   style={styles.input}
+                  disabled={!isEditing}
                 />
               </div>
 
@@ -219,8 +243,31 @@ export default function DeveloperSettings() {
                   value={formData.email}
                   onChange={handleChange}
                   style={styles.input}
+                  disabled={!isEditing}
                 />
               </div>
+
+              {/* Bouton Supprimer le profil */}
+              {isEditing && (
+                <div style={styles.deleteSection}>
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    style={styles.deleteButton}
+                  >
+                    <svg style={styles.deleteIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                    Supprimer mon compte
+                  </button>
+                  <p style={styles.deleteWarning}>
+                    Cette action est irréversible. Toutes vos données seront supprimées.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -276,30 +323,34 @@ export default function DeveloperSettings() {
                   placeholder="Confirmez votre mot de passe"
                 />
               </div>
-
-              <div style={styles.mfaSection}>
-                <div>
-                  <strong style={styles.mfaTitle}>Authentification à deux facteurs</strong>
-                  <p style={styles.mfaDescription}>
-                    Ajoutez une couche de sécurité supplémentaire
-                  </p>
-                </div>
-                <button type="button" style={styles.mfaButton}>
-                  Activer
-                </button>
-              </div>
             </div>
           )}
 
+          {/* Boutons d'action */}
           <div style={styles.formActions}>
-            <button type="submit" style={styles.saveButton}>
-              <svg style={styles.saveIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                <polyline points="17 21 17 13 7 13 7 21" />
-                <polyline points="7 3 7 8 15 8" />
-              </svg>
-              Enregistrer
-            </button>
+            {isEditing ? (
+              <>
+                <button type="submit" style={styles.saveButton}>
+                  <svg style={styles.saveIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  Enregistrer
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditing(false)}
+                  style={styles.cancelButton}
+                >
+                  Annuler
+                </button>
+              </>
+            ) : (
+              <p style={styles.viewModeText}>
+                Cliquez sur "Modifier" pour changer vos informations
+              </p>
+            )}
           </div>
         </form>
       </div>
@@ -453,7 +504,7 @@ const styles = {
     border: "1px solid #e5e7eb",
   },
   
-  // NOUVELLE SECTION NOTIFICATIONS
+  // Section Notifications
   notificationsSection: {
     marginBottom: "30px",
     padding: "20px",
@@ -514,6 +565,7 @@ const styles = {
     fontWeight: "500",
   },
 
+  // Styles du profil
   cardHeader: {
     display: "flex",
     alignItems: "center",
@@ -531,6 +583,26 @@ const styles = {
     fontSize: "1.4rem",
     fontWeight: "600",
     color: "#1e293b",
+    flex: 1,
+  },
+  editButton: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "8px 16px",
+    backgroundColor: "#f3f4f6",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    color: "#3b82f6",
+    fontSize: "0.9rem",
+    fontWeight: "500",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+  },
+  editIcon: {
+    width: "16px",
+    height: "16px",
+    stroke: "currentColor",
   },
   avatarSection: {
     display: "flex",
@@ -599,34 +671,51 @@ const styles = {
     color: "#1e293b",
     outline: "none",
     transition: "all 0.2s ease",
+    "&:disabled": {
+      backgroundColor: "#f1f5f9",
+      color: "#64748b",
+      cursor: "not-allowed",
+    },
   },
-  mfaSection: {
+
+  // Section suppression
+  deleteSection: {
+    marginTop: "30px",
+    padding: "20px",
+    backgroundColor: "#fef2f2",
+    borderRadius: "12px",
+    border: "1px solid #fee2e2",
+  },
+  deleteButton: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: "16px",
-    backgroundColor: "#f8fafc",
+    justifyContent: "center",
+    gap: "8px",
+    width: "100%",
+    padding: "12px",
+    backgroundColor: "#ef4444",
+    border: "none",
     borderRadius: "10px",
-    marginTop: "20px",
-  },
-  mfaTitle: {
+    color: "#ffffff",
     fontSize: "0.95rem",
-    color: "#1e293b",
-  },
-  mfaDescription: {
-    margin: "4px 0 0",
-    fontSize: "0.85rem",
-    color: "#64748b",
-  },
-  mfaButton: {
-    padding: "6px 12px",
-    backgroundColor: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "6px",
-    color: "#475569",
-    fontSize: "0.85rem",
+    fontWeight: "600",
     cursor: "pointer",
+    transition: "all 0.2s ease",
+    marginBottom: "10px",
   },
+  deleteIcon: {
+    width: "18px",
+    height: "18px",
+    stroke: "currentColor",
+  },
+  deleteWarning: {
+    margin: 0,
+    fontSize: "0.85rem",
+    color: "#991b1b",
+    textAlign: "center",
+  },
+
+  // Boutons d'action
   formActions: {
     marginTop: "30px",
     paddingTop: "20px",
@@ -647,10 +736,29 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)",
+    marginBottom: "10px",
   },
   saveIcon: {
     width: "18px",
     height: "18px",
     stroke: "currentColor",
+  },
+  cancelButton: {
+    width: "100%",
+    padding: "14px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "12px",
+    color: "#64748b",
+    fontSize: "1rem",
+    fontWeight: "500",
+    cursor: "pointer",
+  },
+  viewModeText: {
+    margin: 0,
+    textAlign: "center",
+    color: "#64748b",
+    fontSize: "0.95rem",
+    fontStyle: "italic",
   },
 };
