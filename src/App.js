@@ -1,29 +1,29 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-// Layout Components
+// Layout
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Public Pages
+// Public pages
 import HomePage from "./pages/HomePage";
 
-// IT Consultant Auth Pages
+// IT Auth
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 
-// IT Consultant Dashboard Pages
+// IT Dashboard
 import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
 import Settings from "./pages/Settings";
 
-// Developer Auth Pages
+// Developer Auth
 import DeveloperLogin from "./pages/DeveloperLogin";
 import DeveloperSignup from "./pages/DeveloperSignup";
 
-// Developer Dashboard Pages
+// Developer Dashboard
 import DeveloperDashboard from "./pages/DeveloperDashboard";
 import DeveloperSettings from "./pages/DeveloperSettings";
 
@@ -33,21 +33,19 @@ function App() {
       <Navbar />
 
       <Routes>
-        {/* ============ PUBLIC ROUTES ============ */}
+        {/* PUBLIC */}
         <Route path="/" element={<HomePage />} />
 
-        {/* ============ IT CONSULTANT AUTH ROUTES ============ */}
+        {/* IT AUTH */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* ============ DEVELOPER AUTH ROUTES ============ */}
+        {/* DEVELOPER AUTH */}
         <Route path="/developer/login" element={<DeveloperLogin />} />
         <Route path="/developer/register" element={<DeveloperSignup />} />
-        <Route path="/developer/signup" element={<DeveloperSignup />} />
-        <Route path="/register-dev" element={<DeveloperSignup />} />
-        
-        {/* ============ IT CONSULTANT PROTECTED ROUTES ============ */}
+
+        {/* IT DASHBOARD */}
         <Route
           path="/dashboard"
           element={
@@ -90,7 +88,7 @@ function App() {
           }
         />
 
-        {/* ============ DEVELOPER PROTECTED ROUTES ============ */}
+        {/* DEVELOPER DASHBOARD */}
         <Route
           path="/developer/dashboard"
           element={
@@ -109,43 +107,13 @@ function App() {
           }
         />
 
-        {/* ============ 404 NOT FOUND ============ */}
-        <Route
-          path="*"
-          element={
-            <div style={styles.notFound}>
-              <h1>404</h1>
-              <p>Page non trouvée</p>
-              <a href="/" style={styles.homeLink}>Retour à l'accueil</a>
-            </div>
-          }
-        />
+        {/* 404 */}
+        <Route path="*" element={<HomePage />} />
       </Routes>
 
       <Footer />
     </Router>
   );
 }
-
-const styles = {
-  notFound: {
-    minHeight: "60vh",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    textAlign: "center",
-    padding: "40px",
-  },
-  homeLink: {
-    marginTop: "20px",
-    padding: "10px 20px",
-    backgroundColor: "#3b82f6",
-    color: "#ffffff",
-    textDecoration: "none",
-    borderRadius: "8px",
-    fontWeight: "500",
-  },
-};
 
 export default App;

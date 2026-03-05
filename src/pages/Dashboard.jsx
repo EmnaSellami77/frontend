@@ -145,7 +145,7 @@ function Dashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("role");
-    navigate("/login");
+    navigate("/");
   };
 
   const now = new Date().toLocaleDateString("fr-FR", {
