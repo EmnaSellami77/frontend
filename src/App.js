@@ -1,4 +1,4 @@
-// App.js
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 
@@ -6,18 +6,22 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// Pages
+// Pages IT
 import HomePage from "./pages/HomePage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import DeveloperLogin from "./pages/DeveloperLogin";
-import DeveloperSignup from "./pages/DeveloperSignup";
 import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
 import Settings from "./pages/Settings";
-import DeveloperDashboard from "./pages/DeveloperDashboard";
 import ForgotPassword from "./pages/ForgotPassword";
+
+// Pages Developer
+import DeveloperLogin from "./pages/DeveloperLogin";
+import DeveloperSignup from "./pages/DeveloperSignup";
+import DeveloperDashboard from "./pages/DeveloperDashboard";
+import DeveloperSettings from "./pages/DeveloperSettings";
 
 function App() {
   return (
@@ -25,46 +29,72 @@ function App() {
       <Navbar />
 
       <Routes>
-        {/* ================= HOME ================= */}
+        {/* Home */}
         <Route path="/" element={<HomePage />} />
 
-        {/* ================= AUTH IT ================= */}
+        {/* IT Auth */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* ================= AUTH DEVELOPER ================= */}
+        {/* Developer Auth */}
         <Route path="/developer/login" element={<DeveloperLogin />} />
         <Route path="/developer/register" element={<DeveloperSignup />} />
 
-        {/* ================= IT DASHBOARD ================= */}
+        {/* IT Dashboard */}
         <Route
           path="/dashboard"
           element={
-            <div className="container-fluid">
-              <div className="row">
-                <Sidebar />
-                <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
-                  <Dashboard />
-                </main>
+            <ProtectedRoute allowedRole="it">
+              <div className="container-fluid">
+                <div className="row">
+                  <Sidebar />
+                  <main className="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
+                    <Dashboard />
+                  </main>
+                </div>
               </div>
-            </div>
+            </ProtectedRoute>
           }
         />
 
-        {/* ================= DEVELOPER DASHBOARD ================= */}
+        {/* Developer Dashboard */}
         <Route
           path="/developer/dashboard"
-          element={<DeveloperDashboard />}
+          element={
+            <ProtectedRoute allowedRole="developer">
+              <DeveloperDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* IT Pages */}
+        <Route
+          path="/tickets"
+          element={
+            <ProtectedRoute allowedRole="it">
+              <Tickets />
+            </ProtectedRoute>
+          }
         />
         <Route
-          path="/IT/dashboard"
-          element={<Dashboard />}
+          path="/settings"
+          element={
+            <ProtectedRoute allowedRole="it">
+              <Settings />
+            </ProtectedRoute>
+          }
         />
-        {/* ================= OTHER PAGES ================= */}
-        <Route path="/tickets" element={<Tickets />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        
+
+        {/* Developer Settings */}
+        <Route
+          path="/developer/settings"
+          element={
+            <ProtectedRoute allowedRole="developer">
+              <DeveloperSettings />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
 
       <Footer />
