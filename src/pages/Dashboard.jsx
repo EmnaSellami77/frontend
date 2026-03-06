@@ -90,9 +90,9 @@ const useDashboardData = () => {
   });
 
   const priorities = useMemo(() => [
-    { label: "Haute priorité", count: 15, color: COLORS.error, bg: COLORS.errorLight },
-    { label: "Priorité moyenne", count: 45, color: COLORS.warning, bg: COLORS.warningLight },
-    { label: "Basse priorité", count: 60, color: COLORS.success, bg: COLORS.successLight },
+    { label: "Haute priorité", count: 15, color: COLORS.error },
+    { label: "Priorité moyenne", count: 45, color: COLORS.warning },
+    { label: "Basse priorité", count: 60, color: COLORS.success },
   ], []);
 
   return { stats, priorities, totalTickets: stats.totalTickets };
@@ -133,13 +133,13 @@ const PriorityRow = React.memo(({ label, count, color, total }) => {
   const pct = Math.round((count / total) * 100);
   
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "inline-block" }} />
-          <span style={{ fontSize: 13.5, fontWeight: 500, color: "#374151" }}>{label}</span>
-        </div>
-        <span style={{ fontSize: 13, color: COLORS.gray }}>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "inline-block" }} />
+        <span style={{ fontSize: 14, fontWeight: 500, color: "#374151" }}>{label}</span>
+      </div>
+      <div style={{ marginLeft: 16 }}>
+        <span style={{ fontSize: 14, color: COLORS.gray }}>
           {count} ({pct}%)
         </span>
       </div>
@@ -237,31 +237,6 @@ const Header = React.memo(({ isDev, onLogout, onSettings, date }) => (
 
 Header.displayName = "Header";
 
-const SystemInfo = React.memo(() => {
-  const currentTime = useMemo(() => 
-    new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), 
-  []);
-
-  return (
-    <div style={{
-      marginTop: 20,
-      background: COLORS.background, borderRadius: 10,
-      padding: "12px 16px", border: `1px solid ${COLORS.border}`,
-    }}>
-      <p style={{ fontSize: 12.5, color: COLORS.gray, margin: 0, lineHeight: 1.6 }}>
-        <span style={{ fontWeight: 600, color: "#374151" }}>Dernière mise à jour :</span>{" "}
-        aujourd'hui à {currentTime}
-      </p>
-      <p style={{ fontSize: 12.5, color: COLORS.gray, margin: "4px 0 0" }}>
-        <span style={{ fontWeight: 600, color: "#374151" }}>Statut système :</span>{" "}
-        <span style={{ color: COLORS.success, fontWeight: 600 }}>● Opérationnel</span>
-      </p>
-    </div>
-  );
-});
-
-SystemInfo.displayName = "SystemInfo";
-
 // ─── Composant Principal ─────────────────────────────────────────────────────
 function Dashboard() {
   const role = localStorage.getItem("role");
@@ -297,9 +272,16 @@ function Dashboard() {
       minHeight: "100vh",
       background: "linear-gradient(135deg,#f0f4ff 0%,#fafafa 100%)",
       fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif",
-      padding: "36px 28px",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: "20px",
     }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div style={{ 
+        maxWidth: 1200, 
+        width: "100%",
+        margin: "0 auto",
+      }}>
         <Header 
           isDev={isDev} 
           onLogout={handleLogout} 
@@ -374,8 +356,6 @@ function Dashboard() {
                 onClick={handleViewReports} 
               />
             </div>
-
-            <SystemInfo />
           </div>
         </div>
       </div>

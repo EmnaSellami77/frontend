@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Layout
 import Navbar from "./components/Navbar";
-import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -45,17 +44,12 @@ function App() {
         <Route path="/developer/login" element={<DeveloperLogin />} />
         <Route path="/developer/register" element={<DeveloperSignup />} />
 
-        {/* IT DASHBOARD */}
+        {/* IT DASHBOARD - Sans Sidebar */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute allowedRole="it">
-              <div style={{ display: "flex" }}>
-                <Sidebar />
-                <main style={{ flex: 1, padding: "20px" }}>
-                  <Dashboard />
-                </main>
-              </div>
+              <Dashboard />
             </ProtectedRoute>
           }
         />
@@ -64,12 +58,7 @@ function App() {
           path="/tickets"
           element={
             <ProtectedRoute allowedRole="it">
-              <div style={{ display: "flex" }}>
-                <Sidebar />
-                <main style={{ flex: 1, padding: "20px" }}>
-                  <Tickets />
-                </main>
-              </div>
+              <Tickets />
             </ProtectedRoute>
           }
         />
@@ -78,12 +67,7 @@ function App() {
           path="/settings"
           element={
             <ProtectedRoute allowedRole="it">
-              <div style={{ display: "flex" }}>
-                <Sidebar />
-                <main style={{ flex: 1, padding: "20px" }}>
-                  <Settings />
-                </main>
-              </div>
+              <Settings />
             </ProtectedRoute>
           }
         />
