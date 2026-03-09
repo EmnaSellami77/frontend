@@ -40,8 +40,6 @@ const Icons = {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H5.78a1.65 1.65 0 0 0-1.51 1 1.65 1.65 0 0 0 .33 1.82l.04.04A10 10 0 0 0 12 17.66a10 10 0 0 0 6.36-2.62z" />
-      <path d="M16.5 6.5 17 6a3 3 0 0 1 5 2v.1" />
-      <path d="M4.5 6.5 4 6a3 3 0 0 0-5 2v.1" />
     </svg>
   )),
 
