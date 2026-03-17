@@ -45,6 +45,13 @@ const TicketIcon = () => (
   </svg>
 );
 
+const AIIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10 10 10 0 0 1-10-10 10 10 0 0 1 10-10z" />
+    <path d="M12 6v6l4 2" />
+  </svg>
+);
+
 function Badge({ config, label }) {
   return (
     <span style={{
@@ -80,14 +87,72 @@ const COLUMNS = [
   { key: "priorite",       label: "Priorité" },
   { key: "scoreConfiance", label: "Score IA" },
   { key: "status",         label: "Statut" },
+  { key: "actions",        label: "Actions" },
 ];
 
 export default function Tickets() {
-  const [search, setSearch]   = useState("");
+  const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("id");
   const [sortDir, setSortDir] = useState("asc");
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [prediction, setPrediction] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const API_URL = 'http://localhost:5000';
+
+  const analyzeTicket = async (ticket) => {
+    setLoading(true);
+    setSelectedTicket(ticket);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_URL}/predict`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: ticket.titre })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur API: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setPrediction(data);
+      
+    } catch (err) {
+      console.error("Erreur d'analyse:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSuggestedPriority = (category) => {
+    const priorityMap = {
+      'reseau': 'Haute',
+      'serveur': 'Haute',
+      'securite': 'Haute',
+      'vpn': 'Haute',
+      'logiciel': 'Moyenne',
+      'installation': 'Moyenne',
+      'mise à jour': 'Basse',
+      'os': 'Basse'
+    };
+    
+    const categoryLower = category?.toLowerCase() || '';
+    for (const [key, priority] of Object.entries(priorityMap)) {
+      if (categoryLower.includes(key)) {
+        return priority;
+      }
+    }
+    return 'Moyenne';
+  };
 
   const handleSort = (key) => {
+    if (key === 'actions') return;
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -114,10 +179,10 @@ export default function Tickets() {
     });
 
   const stats = [
-    { label: "Total tickets",  value: TICKETS_DATA.length,                                    color: "#6366f1" },
+    { label: "Total tickets",  value: TICKETS_DATA.length, color: "#6366f1" },
     { label: "En attente",     value: TICKETS_DATA.filter((t) => t.status === "En attente").length, color: "#d97706" },
-    { label: "En cours",       value: TICKETS_DATA.filter((t) => t.status === "En cours").length,   color: "#1d4ed8" },
-    { label: "Résolus",        value: TICKETS_DATA.filter((t) => t.status === "Résolu").length,     color: "#15803d" },
+    { label: "En cours",       value: TICKETS_DATA.filter((t) => t.status === "En cours").length, color: "#1d4ed8" },
+    { label: "Résolus",        value: TICKETS_DATA.filter((t) => t.status === "Résolu").length, color: "#15803d" },
   ];
 
   return (
@@ -126,7 +191,7 @@ export default function Tickets() {
       background: "linear-gradient(135deg,#f0f4ff 0%,#fafafa 100%)",
       fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif",
     }}>
-      <div style={{ maxWidth: 1050, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1150, margin: "0 auto" }}>
 
         {/* Header */}
         <div style={{ marginBottom: 28 }}>
@@ -143,7 +208,7 @@ export default function Tickets() {
             </h1>
           </div>
           <p style={{ color: "#64748b", fontSize: 13.5, margin: 0 }}>
-            Suivez et gérez les tickets d'assistance en temps réel.
+            Suivez et gérez les tickets d'assistance avec analyse IA en temps réel.
           </p>
         </div>
 
@@ -226,17 +291,20 @@ export default function Tickets() {
                       onClick={() => handleSort(col.key)}
                       style={{
                         padding: "12px 16px", textAlign: "left",
-                        fontWeight: 600, color: "#475569", fontSize: 12,
-                        letterSpacing: "0.4px", textTransform: "uppercase",
-                        cursor: "pointer", userSelect: "none",
-                        borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap",
+                        fontWeight: 600, color: col.key === 'actions' ? "#475569" : "#475569",
+                        fontSize: 12, letterSpacing: "0.4px", textTransform: "uppercase",
+                        cursor: col.key === 'actions' ? "default" : "pointer",
+                        userSelect: "none", borderBottom: "1px solid #e2e8f0",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         {col.label}
-                        <span style={{ color: sortKey === col.key ? "#6366f1" : "#cbd5e1" }}>
-                          <ChevronIcon dir={sortKey === col.key && sortDir === "desc" ? "down" : "up"} />
-                        </span>
+                        {col.key !== 'actions' && (
+                          <span style={{ color: sortKey === col.key ? "#6366f1" : "#cbd5e1" }}>
+                            <ChevronIcon dir={sortKey === col.key && sortDir === "desc" ? "down" : "up"} />
+                          </span>
+                        )}
                       </div>
                     </th>
                   ))}
@@ -246,7 +314,7 @@ export default function Tickets() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: "48px 0", textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
+                    <td colSpan={8} style={{ padding: "48px 0", textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
                       Aucun ticket trouvé pour « {search} »
                     </td>
                   </tr>
@@ -303,6 +371,21 @@ export default function Tickets() {
                       <td style={{ padding: "13px 16px", borderBottom: "1px solid #f1f5f9" }}>
                         <Badge config={STATUS_CONFIG[ticket.status]} label={ticket.status} />
                       </td>
+
+                      <td style={{ padding: "13px 16px", borderBottom: "1px solid #f1f5f9" }}>
+                        <button
+                          onClick={() => analyzeTicket(ticket)}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 6,
+                            background: "#6366f1", color: "#fff", border: "none",
+                            padding: "6px 12px", borderRadius: 8, fontSize: 12,
+                            fontWeight: 500, cursor: "pointer",
+                          }}
+                        >
+                          <AIIcon />
+                          Analyser
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -319,10 +402,136 @@ export default function Tickets() {
               Affichage de {filtered.length} sur {TICKETS_DATA.length} tickets
             </span>
             <span style={{ fontSize: 12, color: "#cbd5e1" }}>
-              Cliquez sur un en-tête pour trier
+              Cliquez sur Analyser pour la prédiction IA
             </span>
           </div>
         </div>
+
+        {/* Modal de prédiction IA */}
+        {selectedTicket && (
+          <div style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0,0,0,0.5)", display: "flex",
+            alignItems: "center", justifyContent: "center", zIndex: 1000
+          }}>
+            <div style={{
+              background: "#fff", borderRadius: 18, padding: 28,
+              maxWidth: 450, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                  Analyse IA du Ticket #{selectedTicket.id}
+                </h2>
+                <button
+                  onClick={() => {
+                    setSelectedTicket(null);
+                    setPrediction(null);
+                    setError(null);
+                  }}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#94a3b8", padding: 4
+                  }}
+                >
+                  <XIcon />
+                </button>
+              </div>
+
+              {loading ? (
+                <div style={{ textAlign: "center", padding: "32px 0" }}>
+                  <div style={{
+                    width: 40, height: 40, border: "3px solid #f3f3f3",
+                    borderTop: "3px solid #6366f1", borderRadius: "50%",
+                    animation: "spin 1s linear infinite", margin: "0 auto 16px"
+                  }} />
+                  <p style={{ color: "#64748b" }}>Analyse en cours...</p>
+                </div>
+              ) : error ? (
+                <div style={{
+                  background: "#fef2f2", color: "#dc2626",
+                  padding: 16, borderRadius: 10, marginBottom: 16
+                }}>
+                  <p style={{ margin: 0, fontSize: 14 }}>❌ {error}</p>
+                </div>
+              ) : prediction && (
+                <div>
+                  <div style={{
+                    background: "#f8fafc", borderRadius: 12,
+                    padding: 20, marginBottom: 20
+                  }}>
+                    <p style={{ margin: "0 0 12px 0", fontSize: 14, color: "#475569" }}>
+                      <strong>Titre:</strong> {selectedTicket.titre}
+                    </p>
+                    
+                    <div style={{ marginBottom: 16 }}>
+                      <p style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>
+                        Catégorie prédite:
+                      </p>
+                      <div style={{
+                        background: "#eef2ff", color: "#6366f1",
+                        padding: "10px 16px", borderRadius: 8,
+                        fontWeight: 700, fontSize: 16
+                      }}>
+                        {prediction.category}
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <p style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>
+                        Niveau de confiance:
+                      </p>
+                      <ScoreBar score={prediction.confidence} />
+                    </div>
+
+                    <div>
+                      <p style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>
+                        Priorité suggérée:
+                      </p>
+                      <Badge 
+                        config={PRIORITY_CONFIG[getSuggestedPriority(prediction.category)]} 
+                        label={getSuggestedPriority(prediction.category)} 
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: "flex", gap: 12, justifyContent: "flex-end"
+                  }}>
+                    <button
+                      onClick={() => {
+                        setSelectedTicket(null);
+                        setPrediction(null);
+                      }}
+                      style={{
+                        padding: "10px 20px", background: "#f1f5f9",
+                        border: "none", borderRadius: 8, fontSize: 14,
+                        color: "#475569", cursor: "pointer"
+                      }}
+                    >
+                      Fermer
+                    </button>
+                    <button
+                      style={{
+                        padding: "10px 20px", background: "#6366f1",
+                        border: "none", borderRadius: 8, fontSize: 14,
+                        color: "#fff", cursor: "pointer"
+                      }}
+                    >
+                      Appliquer
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     </div>
   );
