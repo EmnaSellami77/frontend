@@ -98,6 +98,7 @@ export default function Tickets() {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [tickets, setTickets] = useState(TICKETS_DATA);
 
   const API_URL = 'http://localhost:5000';
 
@@ -151,6 +152,46 @@ export default function Tickets() {
     return 'Moyenne';
   };
 
+  // ✅ Fonction handleApply ajoutée au bon endroit
+  const handleApply = () => {
+    if (!selectedTicket || !prediction) return;
+
+    const newPriority = getSuggestedPriority(prediction.category);
+
+    // Mise à jour du ticket
+    const updatedTickets = tickets.map(ticket => {
+      if (ticket.id === selectedTicket.id) {
+        return {
+          ...ticket,
+          priorite: newPriority,
+          scoreConfiance: prediction.confidence
+        };
+      }
+      return ticket;
+    });
+
+    setTickets(updatedTickets);
+
+    // Messages de confirmation
+    console.log(`✅ Ticket #${selectedTicket.id} mis à jour`);
+    console.log(`   Nouvelle priorité: ${newPriority}`);
+    console.log(`   Catégorie: ${prediction.category}`);
+    console.log(`   Confiance: ${Math.round(prediction.confidence * 100)}%`);
+
+    alert(
+      `✅ Mise à jour effectuée\n\n` +
+      `Ticket #${selectedTicket.id}\n` +
+      `Titre: ${selectedTicket.titre}\n` +
+      `Nouvelle priorité: ${newPriority}\n` +
+      `Catégorie: ${prediction.category}\n` +
+      `Confiance: ${Math.round(prediction.confidence * 100)}%`
+    );
+
+    // Fermer le modal
+    setSelectedTicket(null);
+    setPrediction(null);
+  };
+
   const handleSort = (key) => {
     if (key === 'actions') return;
     if (sortKey === key) {
@@ -161,7 +202,7 @@ export default function Tickets() {
     }
   };
 
-  const filtered = TICKETS_DATA
+  const filtered = tickets
     .filter((t) =>
       t.utilisateur.toLowerCase().includes(search.toLowerCase()) ||
       t.titre.toLowerCase().includes(search.toLowerCase())
@@ -179,10 +220,10 @@ export default function Tickets() {
     });
 
   const stats = [
-    { label: "Total tickets",  value: TICKETS_DATA.length, color: "#6366f1" },
-    { label: "En attente",     value: TICKETS_DATA.filter((t) => t.status === "En attente").length, color: "#d97706" },
-    { label: "En cours",       value: TICKETS_DATA.filter((t) => t.status === "En cours").length, color: "#1d4ed8" },
-    { label: "Résolus",        value: TICKETS_DATA.filter((t) => t.status === "Résolu").length, color: "#15803d" },
+    { label: "Total tickets",  value: tickets.length, color: "#6366f1" },
+    { label: "En attente",     value: tickets.filter((t) => t.status === "En attente").length, color: "#d97706" },
+    { label: "En cours",       value: tickets.filter((t) => t.status === "En cours").length, color: "#1d4ed8" },
+    { label: "Résolus",        value: tickets.filter((t) => t.status === "Résolu").length, color: "#15803d" },
   ];
 
   return (
@@ -399,7 +440,7 @@ export default function Tickets() {
             display: "flex", justifyContent: "space-between", alignItems: "center",
           }}>
             <span style={{ fontSize: 12.5, color: "#94a3b8" }}>
-              Affichage de {filtered.length} sur {TICKETS_DATA.length} tickets
+              Affichage de {filtered.length} sur {tickets.length} tickets
             </span>
             <span style={{ fontSize: 12, color: "#cbd5e1" }}>
               Cliquez sur Analyser pour la prédiction IA
@@ -511,6 +552,7 @@ export default function Tickets() {
                       Fermer
                     </button>
                     <button
+                      onClick={handleApply}
                       style={{
                         padding: "10px 20px", background: "#6366f1",
                         border: "none", borderRadius: 8, fontSize: 14,
