@@ -17,13 +17,9 @@ export default function DeveloperDashboard() {
 
   const [problem, setProblem] = useState("");
   const [type, setType] = useState("");
-
-  const [stats, setStats] = useState({
-    frontend: 0,
-    backend: 0,
-    database: 0,
-    devops: 0,
-  });
+  const [editingId, setEditingId] = useState(null);
+  const [tickets, setTickets] = useState([]);
+  const [stats, setStats] = useState({});
 
   const handleAnalyze = () => {
     if (!problem || !type) {
@@ -31,12 +27,73 @@ export default function DeveloperDashboard() {
       return;
     }
 
-    // Mise à jour statistiques
-    setStats({
-      ...stats,
-      [type]: stats[type] + 1,
-    });
+    if (editingId) {
+      // Mode édition - mettre à jour le ticket existant
+      const oldTicket = tickets.find(t => t.id === editingId);
+      const updatedTickets = tickets.map(ticket =>
+        ticket.id === editingId
+          ? { ...ticket, type, description: problem, date: new Date().toLocaleString() }
+          : ticket
+      );
+      
+      // Mettre à jour les statistiques
+      const newStats = { ...stats };
+      // Décrémenter l'ancien type
+      newStats[oldTicket.type] = (newStats[oldTicket.type] || 1) - 1;
+      if (newStats[oldTicket.type] === 0) delete newStats[oldTicket.type];
+      // Incrémenter le nouveau type
+      newStats[type] = (newStats[type] || 0) + 1;
+      
+      setTickets(updatedTickets);
+      setStats(newStats);
+      setEditingId(null);
+    } else {
+      // Mode création - ajouter un nouveau ticket
+      const newTicket = {
+        id: Date.now(),
+        type,
+        description: problem,
+        date: new Date().toLocaleString(),
+      };
+      
+      setTickets([...tickets, newTicket]);
+      setStats({
+        ...stats,
+        [type]: (stats[type] || 0) + 1
+      });
+    }
 
+    setProblem("");
+    setType("");
+  };
+
+  const handleEdit = (ticket) => {
+    setEditingId(ticket.id);
+    setType(ticket.type);
+    setProblem(ticket.description);
+  };
+
+  const handleDelete = (id, ticketType) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce ticket ?")) {
+      const updatedTickets = tickets.filter(ticket => ticket.id !== id);
+      setTickets(updatedTickets);
+      
+      // Mettre à jour les statistiques
+      const newStats = { ...stats };
+      newStats[ticketType] = (newStats[ticketType] || 1) - 1;
+      if (newStats[ticketType] === 0) delete newStats[ticketType];
+      setStats(newStats);
+      
+      if (editingId === id) {
+        setEditingId(null);
+        setProblem("");
+        setType("");
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
     setProblem("");
     setType("");
   };
@@ -49,23 +106,27 @@ export default function DeveloperDashboard() {
     navigate("/");
   };
 
+  // Préparer les données du graphique
+  const categories = Object.keys(stats);
+  const values = Object.values(stats);
+  
+  // Couleurs dynamiques pour chaque type
+  const generateColor = (index) => {
+    const colors = [
+      "#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", 
+      "#ef4444", "#ec489a", "#06b6d4", "#84cc16",
+      "#f97316", "#14b8a6", "#6366f1", "#a855f7"
+    ];
+    return colors[index % colors.length];
+  };
+
   const chartData = {
-    labels: ["Frontend", "Backend", "Database", "DevOps"],
+    labels: categories,
     datasets: [
       {
         label: "Nombre de tickets",
-        data: [
-          stats.frontend,
-          stats.backend,
-          stats.database,
-          stats.devops,
-        ],
-        backgroundColor: [
-          "#3b82f6",
-          "#10b981",
-          "#8b5cf6",
-          "#f59e0b",
-        ],
+        data: values,
+        backgroundColor: categories.map((_, index) => generateColor(index)),
         borderRadius: 6,
       },
     ],
@@ -73,9 +134,16 @@ export default function DeveloperDashboard() {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: false,
+      },
+      tooltip: {
+        callbacks: {
+          title: (context) => context[0].label,
+          label: (context) => `Nombre: ${context.raw}`,
+        },
       },
     },
     scales: {
@@ -84,14 +152,26 @@ export default function DeveloperDashboard() {
         grid: {
           color: "#e5e7eb",
         },
+        title: {
+          display: true,
+          text: "Nombre de tickets",
+          color: "#64748b",
+        },
       },
       x: {
         grid: {
           display: false,
         },
+        title: {
+          display: true,
+          text: "Types de problèmes",
+          color: "#64748b",
+        },
       },
     },
   };
+
+  const totalTickets = values.reduce((sum, val) => sum + val, 0);
 
   return (
     <div style={styles.page}>
@@ -125,63 +205,144 @@ export default function DeveloperDashboard() {
       </div>
 
       <div style={styles.container}>
-        {/* FORMULAIRE */}
-        <div style={styles.card}>
-          <div style={styles.cardHeader}>
-            <svg style={styles.cardIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="16" />
-              <line x1="8" y1="12" x2="16" y2="12" />
-            </svg>
-            <h3 style={styles.cardTitle}>Créer un nouveau ticket</h3>
-          </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>
-              <svg style={styles.labelIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div style={styles.leftColumn}>
+          {/* FORMULAIRE */}
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <svg style={styles.cardIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4M12 8h.01" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
               </svg>
-              Type de problème
-            </label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              style={styles.select}
-            >
-              <option value="">-- Sélectionner un type --</option>
-              <option value="frontend">Frontend</option>
-              <option value="backend">Backend</option>
-              <option value="database">Database</option>
-              <option value="devops">DevOps</option>
-            </select>
+              <h3 style={styles.cardTitle}>
+                {editingId ? "Modifier le ticket" : "Créer un nouveau ticket"}
+              </h3>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>
+                <svg style={styles.labelIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4M12 8h.01" />
+                </svg>
+                Type de problème
+              </label>
+              <input
+                type="text"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                style={styles.input}
+                placeholder="Ex: UI/UX, Performance, Sécurité, Bug, etc..."
+              />
+              <div style={styles.hint}>
+                <svg style={styles.hintIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4M12 8h.01" />
+                </svg>
+                <span>Entrez n'importe quel type de problème</span>
+              </div>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>
+                <svg style={styles.labelIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                </svg>
+                Description
+              </label>
+              <textarea
+                value={problem}
+                onChange={(e) => setProblem(e.target.value)}
+                style={styles.textarea}
+                placeholder="Décrivez votre problème en détail..."
+                rows="4"
+              />
+            </div>
+
+            <div style={styles.buttonGroup}>
+              <button onClick={handleAnalyze} style={styles.button}>
+                <svg style={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  {editingId ? (
+                    <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34" />
+                  ) : (
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                  )}
+                  {editingId ? (
+                    <polygon points="18 2 22 6 12 16 8 16 8 12 18 2" />
+                  ) : (
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  )}
+                </svg>
+                {editingId ? "Mettre à jour" : "Envoyer le ticket"}
+              </button>
+              
+              {editingId && (
+                <button onClick={handleCancelEdit} style={styles.cancelButton}>
+                  <svg style={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  Annuler
+                </button>
+              )}
+            </div>
           </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>
-              <svg style={styles.labelIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-              </svg>
-              Description
-            </label>
-            <textarea
-              value={problem}
-              onChange={(e) => setProblem(e.target.value)}
-              style={styles.textarea}
-              placeholder="Décrivez votre problème en détail..."
-              rows="4"
-            />
-          </div>
-
-          <button onClick={handleAnalyze} style={styles.button}>
-            <svg style={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-            Envoyer le ticket
-          </button>
+          {/* LISTE DES TICKETS */}
+          {tickets.length > 0 && (
+            <div style={styles.ticketsListCard}>
+              <div style={styles.ticketsHeader}>
+                <svg style={styles.ticketsIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 12V8H4v4M20 12v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4M20 12h-4a2 2 0 0 0-2 2v4M4 12h4a2 2 0 0 1 2 2v4" />
+                </svg>
+                <h3 style={styles.ticketsTitle}>Liste des tickets ({tickets.length})</h3>
+              </div>
+              
+              <div style={styles.ticketsContainer}>
+                {tickets.map((ticket) => (
+                  <div key={ticket.id} style={styles.ticketItem}>
+                    <div style={styles.ticketContent}>
+                      <div style={styles.ticketHeader}>
+                        <span style={{
+                          ...styles.ticketType,
+                          backgroundColor: generateColor(categories.indexOf(ticket.type) % 12)
+                        }}>
+                          {ticket.type}
+                        </span>
+                        <span style={styles.ticketDate}>{ticket.date}</span>
+                      </div>
+                      <p style={styles.ticketDescription}>{ticket.description}</p>
+                    </div>
+                    <div style={styles.ticketActions}>
+                      <button
+                        onClick={() => handleEdit(ticket)}
+                        style={styles.editButton}
+                        title="Modifier"
+                      >
+                        <svg style={styles.actionIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34" />
+                          <polygon points="18 2 22 6 12 16 8 16 8 12 18 2" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(ticket.id, ticket.type)}
+                        style={styles.deleteButton}
+                        title="Supprimer"
+                      >
+                        <svg style={styles.actionIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* STATISTIQUES */}
@@ -195,42 +356,43 @@ export default function DeveloperDashboard() {
             <h3 style={styles.statsTitle}>Statistiques des tickets</h3>
           </div>
           
-          <div style={styles.chartContainer}>
-            <Bar data={chartData} options={chartOptions} />
-          </div>
+          {categories.length > 0 ? (
+            <>
+              <div style={styles.chartContainer}>
+                <Bar data={chartData} options={chartOptions} />
+              </div>
 
-          {/* Résumé des tickets */}
-          <div style={styles.summaryContainer}>
-            <div style={styles.summaryItem}>
-              <span style={styles.summaryLabel}>Total tickets</span>
-              <span style={styles.summaryValue}>
-                {stats.frontend + stats.backend + stats.database + stats.devops}
-              </span>
+              <div style={styles.summaryContainer}>
+                <div style={styles.summaryItem}>
+                  <span style={styles.summaryLabel}>Total tickets</span>
+                  <span style={styles.summaryValue}>{totalTickets}</span>
+                </div>
+                <div style={styles.summaryDivider} />
+                <div style={styles.summaryGrid}>
+                  {categories.map((category, index) => (
+                    <div key={category} style={styles.summaryGridItem}>
+                      <span style={{
+                        ...styles.summaryDot,
+                        backgroundColor: generateColor(index)
+                      }} />
+                      <span style={styles.summaryGridLabel}>{category}</span>
+                      <span style={styles.summaryGridValue}>{stats[category]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={styles.emptyState}>
+              <svg style={styles.emptyIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7" />
+                <polyline points="15 2 21 8 15 8" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <p style={styles.emptyText}>Aucun ticket pour le moment</p>
+              <p style={styles.emptySubtext}>Créez votre premier ticket pour voir les statistiques</p>
             </div>
-            <div style={styles.summaryDivider} />
-            <div style={styles.summaryGrid}>
-              <div style={styles.summaryGridItem}>
-                <span style={{...styles.summaryDot, backgroundColor: '#3b82f6'}} />
-                <span style={styles.summaryGridLabel}>Frontend</span>
-                <span style={styles.summaryGridValue}>{stats.frontend}</span>
-              </div>
-              <div style={styles.summaryGridItem}>
-                <span style={{...styles.summaryDot, backgroundColor: '#10b981'}} />
-                <span style={styles.summaryGridLabel}>Backend</span>
-                <span style={styles.summaryGridValue}>{stats.backend}</span>
-              </div>
-              <div style={styles.summaryGridItem}>
-                <span style={{...styles.summaryDot, backgroundColor: '#8b5cf6'}} />
-                <span style={styles.summaryGridLabel}>Database</span>
-                <span style={styles.summaryGridValue}>{stats.database}</span>
-              </div>
-              <div style={styles.summaryGridItem}>
-                <span style={{...styles.summaryDot, backgroundColor: '#f59e0b'}} />
-                <span style={styles.summaryGridLabel}>DevOps</span>
-                <span style={styles.summaryGridValue}>{stats.devops}</span>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -322,8 +484,13 @@ const styles = {
     gap: "30px",
     marginTop: "10px",
   },
-  card: {
+  leftColumn: {
     flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: "30px",
+  },
+  card: {
     backgroundColor: "#ffffff",
     padding: "30px",
     borderRadius: "20px",
@@ -365,7 +532,7 @@ const styles = {
     height: "16px",
     stroke: "#94a3b8",
   },
-  select: {
+  input: {
     width: "100%",
     padding: "12px 16px",
     backgroundColor: "#f8fafc",
@@ -375,7 +542,20 @@ const styles = {
     color: "#1e293b",
     outline: "none",
     transition: "all 0.2s ease",
-    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  hint: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    marginTop: "6px",
+    fontSize: "0.8rem",
+    color: "#94a3b8",
+  },
+  hintIcon: {
+    width: "14px",
+    height: "14px",
+    stroke: "#94a3b8",
   },
   textarea: {
     width: "100%",
@@ -390,12 +570,16 @@ const styles = {
     transition: "all 0.2s ease",
     fontFamily: "inherit",
   },
+  buttonGroup: {
+    display: "flex",
+    gap: "12px",
+  },
   button: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: "8px",
-    width: "100%",
+    flex: 1,
     padding: "14px",
     background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
     border: "none",
@@ -407,7 +591,124 @@ const styles = {
     transition: "all 0.2s ease",
     boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)",
   },
+  cancelButton: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    flex: 1,
+    padding: "14px",
+    backgroundColor: "#f1f5f9",
+    border: "1px solid #e2e8f0",
+    borderRadius: "12px",
+    color: "#475569",
+    fontSize: "1rem",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+  },
   buttonIcon: {
+    width: "18px",
+    height: "18px",
+    stroke: "currentColor",
+  },
+  ticketsListCard: {
+    backgroundColor: "#ffffff",
+    padding: "30px",
+    borderRadius: "20px",
+    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+    border: "1px solid #e5e7eb",
+  },
+  ticketsHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "20px",
+  },
+  ticketsIcon: {
+    width: "28px",
+    height: "28px",
+    color: "#10b981",
+    stroke: "currentColor",
+  },
+  ticketsTitle: {
+    margin: 0,
+    fontSize: "1.4rem",
+    fontWeight: "600",
+    color: "#1e293b",
+  },
+  ticketsContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    maxHeight: "400px",
+    overflowY: "auto",
+  },
+  ticketItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    padding: "16px",
+    backgroundColor: "#f8fafc",
+    borderRadius: "12px",
+    border: "1px solid #e2e8f0",
+    transition: "all 0.2s ease",
+  },
+  ticketContent: {
+    flex: 1,
+  },
+  ticketHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "8px",
+    flexWrap: "wrap",
+  },
+  ticketType: {
+    padding: "4px 12px",
+    borderRadius: "20px",
+    fontSize: "0.85rem",
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  ticketDate: {
+    fontSize: "0.8rem",
+    color: "#94a3b8",
+  },
+  ticketDescription: {
+    margin: 0,
+    fontSize: "0.9rem",
+    color: "#475569",
+    lineHeight: "1.5",
+  },
+  ticketActions: {
+    display: "flex",
+    gap: "8px",
+    marginLeft: "12px",
+  },
+  editButton: {
+    padding: "8px",
+    backgroundColor: "#e6f0ff",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButton: {
+    padding: "8px",
+    backgroundColor: "#fee2e2",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionIcon: {
     width: "18px",
     height: "18px",
     stroke: "currentColor",
@@ -419,6 +720,7 @@ const styles = {
     borderRadius: "20px",
     boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
     border: "1px solid #e5e7eb",
+    alignSelf: "flex-start",
   },
   statsHeader: {
     display: "flex",
@@ -469,7 +771,7 @@ const styles = {
   },
   summaryGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
+    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
     gap: "15px",
   },
   summaryGridItem: {
@@ -491,5 +793,26 @@ const styles = {
     fontSize: "1rem",
     fontWeight: "600",
     color: "#1e293b",
+  },
+  emptyState: {
+    textAlign: "center",
+    padding: "50px 20px",
+    color: "#94a3b8",
+  },
+  emptyIcon: {
+    width: "64px",
+    height: "64px",
+    margin: "0 auto 20px",
+    stroke: "#cbd5e1",
+  },
+  emptyText: {
+    fontSize: "1rem",
+    fontWeight: "500",
+    color: "#64748b",
+    marginBottom: "8px",
+  },
+  emptySubtext: {
+    fontSize: "0.9rem",
+    color: "#94a3b8",
   },
 };
