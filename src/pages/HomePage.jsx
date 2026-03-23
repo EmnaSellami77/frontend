@@ -157,10 +157,10 @@ function HomePage() {
                   </p>
                   <div className="mt-4 d-flex justify-content-center gap-3">
                     <Link to="/login" className="btn btn-primary px-4">
-                      Login
+                      se connecter
                     </Link>
                     <Link to="/register" className="btn btn-outline-primary px-4">
-                      Sign Up
+                      s'inscrire
                     </Link>
                   </div>
                 </div>
@@ -186,10 +186,10 @@ function HomePage() {
                   </p>
                   <div className="mt-4 d-flex justify-content-center gap-3">
                     <Link to="/developer/login" className="btn btn-primary px-4">
-                      Login
+                      se connecter
                     </Link>
                     <Link to="/developer/register" className="btn btn-outline-primary px-4">
-                      Sign Up
+                      s'inscrire
                     </Link>
                   </div>
                 </div>

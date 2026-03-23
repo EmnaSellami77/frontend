@@ -25,8 +25,7 @@ function DeveloperLogin() {
   return (
     <div className="vh-100 d-flex justify-content-center align-items-center animated-bg">
       <div className="card p-4 shadow-lg" style={{ width: "400px", borderRadius: "15px" }}>
-        <h3 className="text-center mb-4">Developer Login</h3>
-
+        
         {error && <div className="alert alert-danger">{error}</div>}
 
         <form onSubmit={handleSubmit}>
@@ -41,7 +40,7 @@ function DeveloperLogin() {
           </div>
 
           <div className="mb-3 position-relative">
-            <label>Password</label>
+            <label>mot de passe</label>
             <input
               type={isPasswordVisible ? "text" : "password"}
               className="form-control pe-5"
@@ -62,7 +61,7 @@ function DeveloperLogin() {
             </Link>
           </div>
 
-          <button className="btn btn-primary w-100">Login</button>
+          <button className="btn btn-primary w-100">se connecter</button>
         </form>
       </div>
     </div>

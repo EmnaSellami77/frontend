@@ -69,7 +69,7 @@ export default function DeveloperSettings() {
           <svg style={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
-          <h2 style={styles.title}>Developer Settings</h2>
+          <h2 style={styles.title}>paramètres</h2>
         </div>
         
         <div style={styles.headerRight}>

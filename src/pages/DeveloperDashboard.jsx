@@ -17,7 +17,6 @@ export default function DeveloperDashboard() {
 
   const [problem, setProblem] = useState("");
   const [type, setType] = useState("");
-  const [priority, setPriority] = useState("");
 
   const [stats, setStats] = useState({
     frontend: 0,
@@ -27,7 +26,7 @@ export default function DeveloperDashboard() {
   });
 
   const handleAnalyze = () => {
-    if (!problem || !type || !priority) {
+    if (!problem || !type) {
       alert("Veuillez remplir tous les champs !");
       return;
     }
@@ -40,7 +39,6 @@ export default function DeveloperDashboard() {
 
     setProblem("");
     setType("");
-    setPriority("");
   };
 
   const handleSettings = () => {
@@ -95,26 +93,6 @@ export default function DeveloperDashboard() {
     },
   };
 
-  // Fonction pour obtenir la couleur de priorité
-  const getPriorityColor = (priorityValue) => {
-    switch(priorityValue) {
-      case 'low': return '#10b981';
-      case 'medium': return '#f59e0b';
-      case 'high': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  // Fonction pour obtenir le libellé de priorité
-  const getPriorityLabel = (priorityValue) => {
-    switch(priorityValue) {
-      case 'low': return 'Faible';
-      case 'medium': return 'Moyenne';
-      case 'high': return 'Urgente';
-      default: return '';
-    }
-  };
-
   return (
     <div style={styles.page}>
       {/* Header avec dégradé */}
@@ -127,13 +105,12 @@ export default function DeveloperDashboard() {
         </div>
         
         <div style={styles.headerRight}>
-          {/* NOUVEAU BOUTON SETTINGS */}
           <button onClick={handleSettings} style={styles.settingsButton}>
             <svg style={styles.settingsIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
-            Settings
+            Paramètres
           </button>
 
           <button onClick={handleLogout} style={styles.logout}>
@@ -173,37 +150,11 @@ export default function DeveloperDashboard() {
               style={styles.select}
             >
               <option value="">-- Sélectionner un type --</option>
-              <option value="frontend">🎨 Frontend</option>
-              <option value="backend">⚙️ Backend</option>
-              <option value="database">🗄️ Database</option>
-              <option value="devops">🚀 DevOps</option>
+              <option value="frontend">Frontend</option>
+              <option value="backend">Backend</option>
+              <option value="database">Database</option>
+              <option value="devops">DevOps</option>
             </select>
-          </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>
-              <svg style={styles.labelIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2l3 7 7 1-5 5 2 7-7-3-7 3 2-7-5-5 7-1 3-7z" />
-              </svg>
-              Priorité
-            </label>
-            <div style={styles.priorityContainer}>
-              {['low', 'medium', 'high'].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPriority(p)}
-                  style={{
-                    ...styles.priorityButton,
-                    backgroundColor: priority === p ? getPriorityColor(p) : '#f3f4f6',
-                    color: priority === p ? 'white' : '#4b5563',
-                    borderColor: priority === p ? getPriorityColor(p) : '#e5e7eb',
-                  }}
-                >
-                  {getPriorityLabel(p)}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div style={styles.formGroup}>
@@ -326,7 +277,6 @@ const styles = {
     color: "#ffffff",
     letterSpacing: "-0.5px",
   },
-  // NOUVEAU STYLE POUR LE BOUTON SETTINGS
   settingsButton: {
     display: "flex",
     alignItems: "center",
@@ -426,21 +376,6 @@ const styles = {
     outline: "none",
     transition: "all 0.2s ease",
     cursor: "pointer",
-  },
-  priorityContainer: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "8px",
-  },
-  priorityButton: {
-    padding: "10px",
-    border: "1px solid",
-    borderRadius: "10px",
-    fontSize: "0.9rem",
-    fontWeight: "500",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-    backgroundColor: "#f8fafc",
   },
   textarea: {
     width: "100%",

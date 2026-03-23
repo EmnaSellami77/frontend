@@ -215,7 +215,7 @@ const Header = React.memo(({ isDev, onLogout, onSettings, date }) => (
           borderRadius: 10, fontWeight: 600, fontSize: 13.5, cursor: "pointer",
         }}
       >
-        <Icons.Settings /> Settings
+        <Icons.Settings /> Paramètres
       </button>
 
       <button
@@ -261,9 +261,7 @@ function Dashboard() {
     navigate("/tickets");
   }, [navigate]);
 
-  const handleViewReports = useCallback(() => {
-    console.log("Voir les rapports");
-  }, []);
+ 
 
   return (
     <div style={{
@@ -348,11 +346,7 @@ function Dashboard() {
                 label="Tickets" 
                 onClick={handleViewAllTickets} 
               />
-              <ActionButton 
-                icon={Icons.Chart} 
-                label="Analyses et rapports" 
-                onClick={handleViewReports} 
-              />
+              
             </div>
           </div>
         </div>
