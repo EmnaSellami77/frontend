@@ -1,7 +1,8 @@
-// src/pages/DeveloperSignup.jsx
+// frontend/src/pages/DeveloperSignup.jsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { authService } from "../services/authService";
 
 export default function DeveloperSignup() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function DeveloperSignup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -23,11 +25,11 @@ export default function DeveloperSignup() {
       ...form,
       [e.target.name]: e.target.value
     });
-    // Effacer l'erreur quand l'utilisateur tape
     if (error) setError("");
+    if (success) setSuccess("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validation
@@ -46,19 +48,32 @@ export default function DeveloperSignup() {
       return;
     }
     
-    // Simulation d'inscription
     setLoading(true);
-    setTimeout(() => {
-      // Sauvegarder dans localStorage (simulation)
-      localStorage.setItem("developer", JSON.stringify({
-        name: form.fullName,
-        email: form.email
-      }));
+    setError("");
+    setSuccess("");
+    
+    try {
+      const response = await authService.signup({
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+        role: "developer"
+      });
       
+      console.log("Inscription réussie:", response);
+      setSuccess("Compte créé avec succès ! Redirection vers la connexion...");
+      
+      // Rediriger vers la page de login après 2 secondes
+      setTimeout(() => {
+        navigate("/developer/login");
+      }, 2000);
+      
+    } catch (err) {
+      console.error("Erreur inscription:", err);
+      setError(err.message || "Erreur lors de l'inscription. Veuillez réessayer.");
+    } finally {
       setLoading(false);
-      // Rediriger vers la page de login
-      navigate("/developer/login");
-    }, 1500);
+    }
   };
 
   return (
@@ -76,12 +91,25 @@ export default function DeveloperSignup() {
       <div style={styles.card}>
         {/* En-tête avec logo */}
         <div style={styles.header}>
-          <svg style={styles.logo} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
-          
-          <p style={styles.subtitle}>Créez votre compte développeur</p>
+          <div style={styles.iconContainer}>
+            <svg style={styles.logo} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h2 style={styles.title}>Inscription Développeur</h2>
+          <p style={styles.subtitle}>Créez votre compte pour accéder à l'espace développeur</p>
         </div>
+
+        {/* Message de succès */}
+        {success && (
+          <div style={styles.successMessage}>
+            <svg style={styles.successIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            {success}
+          </div>
+        )}
 
         {/* Message d'erreur */}
         {error && (
@@ -111,8 +139,9 @@ export default function DeveloperSignup() {
               name="fullName"
               value={form.fullName}
               onChange={handleChange}
-              placeholder="John Doe"
+              placeholder="Jean Dupont"
               style={styles.input}
+              disabled={loading}
             />
           </div>
 
@@ -130,8 +159,9 @@ export default function DeveloperSignup() {
               name="email"
               value={form.email}
               onChange={handleChange}
-              placeholder="emna@example.com"
+              placeholder="jean.dupont@email.com"
               style={styles.input}
+              disabled={loading}
             />
           </div>
 
@@ -152,6 +182,7 @@ export default function DeveloperSignup() {
                 onChange={handleChange}
                 placeholder="••••••••"
                 style={styles.passwordInput}
+                disabled={loading}
               />
               <button
                 type="button"
@@ -161,6 +192,7 @@ export default function DeveloperSignup() {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
+            <p style={styles.hintText}>Minimum 6 caractères</p>
           </div>
 
           {/* Confirmer mot de passe */}
@@ -180,6 +212,7 @@ export default function DeveloperSignup() {
                 onChange={handleChange}
                 placeholder="••••••••"
                 style={styles.passwordInput}
+                disabled={loading}
               />
               <button
                 type="button"
@@ -193,7 +226,7 @@ export default function DeveloperSignup() {
 
           {/* Conditions d'utilisation */}
           <div style={styles.termsContainer}>
-            <input type="checkbox" id="terms" style={styles.checkbox} />
+            <input type="checkbox" id="terms" style={styles.checkbox} required />
             <label htmlFor="terms" style={styles.termsLabel}>
               J'accepte les <a href="/terms" style={styles.termsLink}>conditions d'utilisation</a>
             </label>
@@ -206,7 +239,10 @@ export default function DeveloperSignup() {
             disabled={loading}
           >
             {loading ? (
-              <span style={styles.loadingSpinner}></span>
+              <>
+                <span style={styles.loadingSpinner}></span>
+                Création en cours...
+              </>
             ) : (
               <>
                 <svg style={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -227,30 +263,6 @@ export default function DeveloperSignup() {
             Déjà un compte ? <Link to="/developer/login" style={styles.loginLink}>Se connecter</Link>
           </p>
         </div>
-
-        {/* Séparateur */}
-        <div style={styles.separator}>
-          <span style={styles.separatorText}>ou</span>
-        </div>
-
-        {/* Boutons de connexion sociale */}
-        <div style={styles.socialContainer}>
-          <button style={styles.socialButton}>
-            <svg style={styles.socialIcon} viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-            </svg>
-            Google
-          </button>
-          <button style={styles.socialButton}>
-            <svg style={styles.socialIcon} viewBox="0 0 24 24" fill="#333">
-              <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
-            </svg>
-            Facebook
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -263,7 +275,7 @@ const styles = {
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9fafb",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     padding: "20px",
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
     position: "relative",
@@ -275,11 +287,12 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    padding: "8px 16px",
-    backgroundColor: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "10px",
-    color: "#475569",
+    padding: "10px 20px",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backdropFilter: "blur(10px)",
+    border: "1px solid rgba(255, 255, 255, 0.3)",
+    borderRadius: "12px",
+    color: "#ffffff",
     fontSize: "0.95rem",
     fontWeight: "500",
     cursor: "pointer",
@@ -295,42 +308,68 @@ const styles = {
     backgroundColor: "#ffffff",
     padding: "40px",
     borderRadius: "24px",
-    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02)",
-    border: "1px solid #e5e7eb",
+    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
     width: "100%",
-    maxWidth: "450px",
+    maxWidth: "480px",
   },
   header: {
     textAlign: "center",
     marginBottom: "30px",
   },
+  iconContainer: {
+    width: "70px",
+    height: "70px",
+    margin: "0 auto 16px",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    borderRadius: "20px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   logo: {
-    width: "48px",
-    height: "48px",
-    color: "#3b82f6",
+    width: "40px",
+    height: "40px",
+    color: "#ffffff",
     stroke: "currentColor",
-    marginBottom: "16px",
   },
   title: {
     margin: "0 0 8px 0",
     fontSize: "1.8rem",
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#1e293b",
   },
   subtitle: {
     margin: 0,
-    fontSize: "0.95rem",
+    fontSize: "0.9rem",
     color: "#64748b",
+  },
+  successMessage: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "12px 16px",
+    backgroundColor: "#f0fdf4",
+    border: "1px solid #86efac",
+    borderRadius: "12px",
+    color: "#166534",
+    fontSize: "0.9rem",
+    marginBottom: "20px",
+  },
+  successIcon: {
+    width: "18px",
+    height: "18px",
+    stroke: "currentColor",
+    flexShrink: 0,
   },
   errorMessage: {
     display: "flex",
     alignItems: "center",
-    gap: "8px",
+    gap: "10px",
     padding: "12px 16px",
     backgroundColor: "#fef2f2",
-    border: "1px solid #fee2e2",
+    border: "1px solid #fecaca",
     borderRadius: "12px",
-    color: "#ef4444",
+    color: "#dc2626",
     fontSize: "0.9rem",
     marginBottom: "20px",
   },
@@ -348,15 +387,15 @@ const styles = {
   formGroup: {
     display: "flex",
     flexDirection: "column",
-    gap: "6px",
+    gap: "8px",
   },
   label: {
     display: "flex",
     alignItems: "center",
-    gap: "6px",
+    gap: "8px",
     fontSize: "0.9rem",
-    fontWeight: "500",
-    color: "#475569",
+    fontWeight: "600",
+    color: "#334155",
   },
   labelIcon: {
     width: "16px",
@@ -366,12 +405,13 @@ const styles = {
   input: {
     padding: "12px 16px",
     backgroundColor: "#f8fafc",
-    border: "1px solid #e2e8f0",
+    border: "2px solid #e2e8f0",
     borderRadius: "12px",
     fontSize: "0.95rem",
     color: "#1e293b",
     outline: "none",
     transition: "all 0.2s ease",
+    fontFamily: "inherit",
   },
   passwordContainer: {
     position: "relative",
@@ -380,14 +420,15 @@ const styles = {
   },
   passwordInput: {
     flex: 1,
-    padding: "12px 16px",
+    padding: "12px 45px 12px 16px",
     backgroundColor: "#f8fafc",
-    border: "1px solid #e2e8f0",
+    border: "2px solid #e2e8f0",
     borderRadius: "12px",
     fontSize: "0.95rem",
     color: "#1e293b",
     outline: "none",
-    paddingRight: "45px",
+    transition: "all 0.2s ease",
+    fontFamily: "inherit",
   },
   eyeButton: {
     position: "absolute",
@@ -401,33 +442,38 @@ const styles = {
     alignItems: "center",
     padding: "4px",
   },
+  hintText: {
+    fontSize: "0.75rem",
+    color: "#94a3b8",
+    margin: "4px 0 0",
+  },
   termsContainer: {
     display: "flex",
     alignItems: "center",
-    gap: "8px",
-    marginTop: "10px",
+    gap: "10px",
+    marginTop: "5px",
   },
   checkbox: {
-    width: "16px",
-    height: "16px",
+    width: "18px",
+    height: "18px",
     cursor: "pointer",
   },
   termsLabel: {
-    fontSize: "0.9rem",
+    fontSize: "0.85rem",
     color: "#475569",
   },
   termsLink: {
-    color: "#3b82f6",
+    color: "#667eea",
     textDecoration: "none",
-    fontWeight: "500",
+    fontWeight: "600",
   },
   button: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "8px",
+    gap: "10px",
     padding: "14px",
-    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     border: "none",
     borderRadius: "12px",
     color: "#ffffff",
@@ -435,7 +481,6 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.2s ease",
-    boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)",
     marginTop: "10px",
   },
   buttonIcon: {
@@ -444,16 +489,19 @@ const styles = {
     stroke: "currentColor",
   },
   loadingSpinner: {
-    width: "20px",
-    height: "20px",
+    width: "18px",
+    height: "18px",
     border: "2px solid #ffffff",
     borderTopColor: "transparent",
     borderRadius: "50%",
     animation: "spin 1s linear infinite",
+    display: "inline-block",
   },
   loginContainer: {
     textAlign: "center",
-    marginTop: "20px",
+    marginTop: "24px",
+    paddingTop: "20px",
+    borderTop: "1px solid #e2e8f0",
   },
   loginText: {
     margin: 0,
@@ -461,51 +509,14 @@ const styles = {
     color: "#64748b",
   },
   loginLink: {
-    color: "#3b82f6",
+    color: "#667eea",
     textDecoration: "none",
-    fontWeight: "500",
-  },
-  separator: {
-    position: "relative",
-    textAlign: "center",
-    margin: "20px 0",
-  },
-  separatorText: {
-    position: "relative",
-    backgroundColor: "#ffffff",
-    padding: "0 10px",
-    color: "#94a3b8",
-    fontSize: "0.9rem",
-    zIndex: 2,
-  },
-  socialContainer: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "12px",
-    marginTop: "10px",
-  },
-  socialButton: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    padding: "10px",
-    backgroundColor: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "10px",
-    color: "#1e293b",
-    fontSize: "0.9rem",
-    fontWeight: "500",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  socialIcon: {
-    width: "18px",
-    height: "18px",
+    fontWeight: "600",
+    marginLeft: "5px",
   },
 };
 
-// Ajout de l'animation pour le spinner
+// Ajout de l'animation
 const style = document.createElement('style');
 style.textContent = `
   @keyframes spin {
@@ -513,34 +524,25 @@ style.textContent = `
     100% { transform: rotate(360deg); }
   }
   
-  .back-button:hover {
-    background-color: #f8fafc;
-    transform: translateX(-2px);
-  }
-  
-  input:hover {
-    border-color: #94a3b8;
-  }
-  
   input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     background-color: #ffffff;
   }
   
-  button[type="submit"]:hover:not(:disabled) {
+  button:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px -5px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 10px 20px -5px rgba(102, 126, 234, 0.4);
   }
   
-  button[type="submit"]:disabled {
+  button:disabled {
     opacity: 0.7;
     cursor: not-allowed;
   }
   
-  .social-button:hover {
-    background-color: #f8fafc;
-    border-color: #cbd5e1;
+  .back-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: translateX(-2px);
   }
 `;
 document.head.appendChild(style);

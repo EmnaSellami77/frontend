@@ -1,8 +1,7 @@
 // frontend/src/services/api.js
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000';  // Pas de /api ici
 
 export const api = {
-  // Configuration commune pour les requêtes
   async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
     const headers = {
@@ -29,7 +28,6 @@ export const api = {
     }
   },
 
-  // Méthodes utilitaires
   get(endpoint) {
     return this.request(endpoint, { method: 'GET' });
   },

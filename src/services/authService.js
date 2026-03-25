@@ -2,10 +2,15 @@
 import { api } from './api';
 
 export const authService = {
-  // Inscription
+  // Inscription - utilise /signup (pas /api/auth/signup)
   async signup(userData) {
     try {
-      const response = await api.post('/auth/signup', userData);
+      const response = await api.post('/signup', {
+        name: userData.fullName,
+        email: userData.email,
+        password: userData.password,
+        role: userData.role || 'developer'
+      });
       return response;
     } catch (error) {
       console.error('Erreur inscription:', error);
@@ -13,12 +18,14 @@ export const authService = {
     }
   },
 
-  // Connexion
+  // Connexion - utilise /login (pas /api/auth/login)
   async login(credentials) {
     try {
-      const response = await api.post('/auth/login', credentials);
+      const response = await api.post('/login', {
+        email: credentials.email,
+        password: credentials.password
+      });
       
-      // Sauvegarder les données utilisateur dans localStorage
       if (response.user) {
         localStorage.setItem('user', JSON.stringify(response.user));
         localStorage.setItem('role', response.user.role);
@@ -32,27 +39,22 @@ export const authService = {
     }
   },
 
-  // Déconnexion
   logout() {
     localStorage.removeItem('user');
     localStorage.removeItem('role');
     localStorage.removeItem('userId');
   },
 
-  // Récupérer l'utilisateur connecté
   getCurrentUser() {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
 
-  // Vérifier si l'utilisateur est connecté
   isAuthenticated() {
     return localStorage.getItem('user') !== null;
   },
 
-  // Vérifier le rôle
-  hasRole(role) {
-    const userRole = localStorage.getItem('role');
-    return userRole === role;
-  },
+  getRole() {
+    return localStorage.getItem('role');
+  }
 };
