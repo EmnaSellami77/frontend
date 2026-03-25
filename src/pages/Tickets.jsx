@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Ajout de l'import pour la navigation
 
 const TICKETS_DATA = [
   { id: 1, titre: "Problème réseau", utilisateur: "Ahmed", dateCreation: "2026-03-03T14:32:00", priorite: "Haute", scoreConfiance: 0.92, status: "En attente" },
@@ -52,6 +53,14 @@ const AIIcon = () => (
   </svg>
 );
 
+// Icône pour le bouton retour
+const ArrowLeftIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
+);
+
 function Badge({ config, label }) {
   return (
     <span style={{
@@ -91,6 +100,8 @@ const COLUMNS = [
 ];
 
 export default function Tickets() {
+  const navigate = useNavigate(); // Hook de navigation React Router
+  
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("id");
   const [sortDir, setSortDir] = useState("asc");
@@ -101,6 +112,14 @@ export default function Tickets() {
   const [tickets, setTickets] = useState(TICKETS_DATA);
 
   const API_URL = 'http://localhost:5000';
+
+  // Fonction pour retourner à la page Dashboard
+  const handleGoBack = () => {
+    navigate('/dashboard'); // Redirige vers la page Dashboard
+    // Si votre route est différente, utilisez par exemple:
+    // navigate('/'); pour la racine
+    // navigate('/accueil'); pour la page d'accueil
+  };
 
   const analyzeTicket = async (ticket) => {
     setLoading(true);
@@ -152,13 +171,11 @@ export default function Tickets() {
     return 'Moyenne';
   };
 
-  // ✅ Fonction handleApply ajoutée au bon endroit
   const handleApply = () => {
     if (!selectedTicket || !prediction) return;
 
     const newPriority = getSuggestedPriority(prediction.category);
 
-    // Mise à jour du ticket
     const updatedTickets = tickets.map(ticket => {
       if (ticket.id === selectedTicket.id) {
         return {
@@ -172,7 +189,6 @@ export default function Tickets() {
 
     setTickets(updatedTickets);
 
-    // Messages de confirmation
     console.log(`✅ Ticket #${selectedTicket.id} mis à jour`);
     console.log(`   Nouvelle priorité: ${newPriority}`);
     console.log(`   Catégorie: ${prediction.category}`);
@@ -187,7 +203,6 @@ export default function Tickets() {
       `Confiance: ${Math.round(prediction.confidence * 100)}%`
     );
 
-    // Fermer le modal
     setSelectedTicket(null);
     setPrediction(null);
   };
@@ -234,19 +249,74 @@ export default function Tickets() {
     }}>
       <div style={{ maxWidth: 1150, margin: "0 auto" }}>
 
-        {/* Header */}
+        {/* Header avec bouton retour */}
         <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <div style={{
-              width: 38, height: 38, borderRadius: 10,
-              background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-              display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
-            }}>
-              <TicketIcon />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10,
+                background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+              }}>
+                <TicketIcon />
+              </div>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0, letterSpacing: "-0.4px" }}>
+                Gestion des Tickets
+              </h1>
             </div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0, letterSpacing: "-0.4px" }}>
-              Gestion des Tickets
-            </h1>
+            
+            {/* Bouton de retour au Dashboard */}
+          <button
+            onClick={handleGoBack}
+            style={{
+              display: "flex", alignItems: "center", gap: 12,
+              background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)",
+              border: "1px solid #e2e8f0",
+              padding: "8px 18px",
+              borderRadius: 30,
+              fontSize: 13.5,
+              fontWeight: 500,
+              color: "#334155",
+              cursor: "pointer",
+              transition: "all 0.25s ease",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)";
+              e.currentTarget.style.color = "white";
+              e.currentTarget.style.borderColor = "transparent";
+              e.currentTarget.style.boxShadow = "0 6px 14px rgba(99, 102, 241, 0.25)";
+              e.currentTarget.style.transform = "scale(1.02)";
+              
+              const icon = e.currentTarget.querySelector('svg');
+              if (icon) {
+                icon.style.stroke = "white";
+                icon.style.transform = "translateX(-4px)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)";
+              e.currentTarget.style.color = "#334155";
+              e.currentTarget.style.borderColor = "#e2e8f0";
+              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.03)";
+              e.currentTarget.style.transform = "scale(1)";
+              
+              const icon = e.currentTarget.querySelector('svg');
+              if (icon) {
+                icon.style.stroke = "currentColor";
+                icon.style.transform = "translateX(0)";
+              }
+            }}
+          >
+            <ArrowLeftIcon />
+            <span style={{ fontWeight: 600, letterSpacing: "-0.2px" }}>Dashboard</span>
+            <span style={{ 
+              fontSize: 12, 
+              opacity: 0.7,
+              display: "inline-flex",
+              alignItems: "center",
+            }}>⌘</span>
+          </button>
           </div>
           <p style={{ color: "#64748b", fontSize: 13.5, margin: 0 }}>
             Suivez et gérez les tickets d'assistance avec analyse IA en temps réel.
