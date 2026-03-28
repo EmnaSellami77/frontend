@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { ticketService, authService } from "../services";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const COLORS = {
@@ -78,24 +79,6 @@ Icons.Check.displayName = "CheckIcon";
 Icons.Clock.displayName = "ClockIcon";
 Icons.Chart.displayName = "ChartIcon";
 
-// ─── Hooks personnalisés ─────────────────────────────────────────────────────
-const useDashboardData = () => {
-  const [stats] = useState({
-    totalTickets: 120,
-    resolved: 95,
-    pending: 25,
-    resolutionRate: 79,
-  });
-
-  const priorities = useMemo(() => [
-    { label: "Haute priorité", count: 15, color: COLORS.error },
-    { label: "Priorité moyenne", count: 45, color: COLORS.warning },
-    { label: "Basse priorité", count: 60, color: COLORS.success },
-  ], []);
-
-  return { stats, priorities, totalTickets: stats.totalTickets };
-};
-
 // ─── Sous-composants ─────────────────────────────────────────────────────────
 const StatCard = React.memo(({ icon: Icon, label, value, color, bg, trend }) => (
   <div style={{
@@ -128,7 +111,7 @@ const StatCard = React.memo(({ icon: Icon, label, value, color, bg, trend }) => 
 StatCard.displayName = "StatCard";
 
 const PriorityRow = React.memo(({ label, count, color, total }) => {
-  const pct = Math.round((count / total) * 100);
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   
   return (
     <div style={{ marginBottom: 16 }}>
@@ -175,7 +158,7 @@ const ActionButton = React.memo(({ icon: Icon, label, primary, onClick }) => {
 
 ActionButton.displayName = "ActionButton";
 
-const Header = React.memo(({ isDev, onLogout, onSettings, date }) => (
+const Header = React.memo(({ isDev, onLogout, onSettings, date, userName }) => (
   <div style={{
     background: "linear-gradient(135deg,#1e293b 0%,#0f172a 100%)",
     borderRadius: 20, padding: "28px 36px", marginBottom: 28,
@@ -198,7 +181,7 @@ const Header = React.memo(({ isDev, onLogout, onSettings, date }) => (
       <p style={{ color: "#94a3b8", fontSize: 13.5, margin: 0 }}>
         Bienvenue,{" "}
         <span style={{ color: "#c4b5fd", fontWeight: 600 }}>
-          {isDev ? "Développeur" : "Consultant IT"}
+          {userName || (isDev ? "Développeur" : "Consultant IT")}
         </span>
         {"  ·  "}
         <span style={{ textTransform: "capitalize" }}>{date}</span>
@@ -235,18 +218,59 @@ const Header = React.memo(({ isDev, onLogout, onSettings, date }) => (
 
 Header.displayName = "Header";
 
-// ─── Composant Principal ─────────────────────────────────────────────────────
+// ─── Composant Principal (DONNÉES RÉELLES) ─────────────────────────────────────
 function Dashboard() {
   const role = localStorage.getItem("role");
   const navigate = useNavigate();
   const isDev = role === "developer";
-  const { stats, priorities, totalTickets } = useDashboardData();
+  
+  // ÉTAT POUR DONNÉES RÉELLES
+  const [realStats, setRealStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("");
 
   const currentDate = useMemo(() => 
     new Date().toLocaleDateString("fr-FR", {
       weekday: "long", day: "numeric", month: "long", year: "numeric",
     }), 
   []);
+
+  // CHARGER LES DONNÉES RÉELLES
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const user = authService.getCurrentUser();
+        setUserName(user?.name || "");
+        const statsData = await ticketService.getTicketStats();
+        setRealStats(statsData);
+      } catch (err) {
+        console.error("Erreur:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // CALCULER LES STATS À PARTIR DES DONNÉES RÉELLES
+  const stats = {
+    totalTickets: realStats?.total_tickets || 0,
+    resolved: realStats?.by_status?.resolved || 0,
+    pending: (realStats?.by_status?.open || 0) + (realStats?.by_status?.in_progress || 0),
+    resolutionRate: realStats?.total_tickets > 0 
+      ? Math.round((realStats.by_status?.resolved || 0) / realStats.total_tickets * 100) 
+      : 0,
+  };
+
+  // PRIORITÉS RÉELLES
+  const priorities = useMemo(() => [
+    { label: "Haute priorité", count: realStats?.by_priority?.high || 0, color: COLORS.error },
+    { label: "Priorité moyenne", count: realStats?.by_priority?.medium || 0, color: COLORS.warning },
+    { label: "Basse priorité", count: realStats?.by_priority?.low || 0, color: COLORS.success },
+  ], [realStats]);
+
+  const totalTickets = stats.totalTickets;
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("role");
@@ -261,7 +285,24 @@ function Dashboard() {
     navigate("/tickets");
   }, [navigate]);
 
- 
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg,#f0f4ff 0%,#fafafa 100%)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}>
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status" style={{ width: 48, height: 48 }}>
+            <span className="visually-hidden">Chargement...</span>
+          </div>
+          <p className="mt-3 text-muted">Chargement du tableau de bord...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -282,7 +323,8 @@ function Dashboard() {
           isDev={isDev} 
           onLogout={handleLogout} 
           onSettings={handleSettings}
-          date={currentDate} 
+          date={currentDate}
+          userName={userName}
         />
 
         {/* Cartes de statistiques */}
@@ -293,7 +335,7 @@ function Dashboard() {
             value={stats.totalTickets}
             color={COLORS.primary}
             bg={COLORS.primaryLight}
-            trend="↑ +8 cette semaine"
+            trend="Données en temps réel"
           />
           <StatCard
             icon={Icons.Check}
@@ -309,7 +351,7 @@ function Dashboard() {
             value={stats.pending}
             color={COLORS.warning}
             bg={COLORS.warningLight}
-            trend="↓ −3 depuis hier"
+            trend="À traiter"
           />
         </div>
 
@@ -346,7 +388,6 @@ function Dashboard() {
                 label="Tickets" 
                 onClick={handleViewAllTickets} 
               />
-              
             </div>
           </div>
         </div>

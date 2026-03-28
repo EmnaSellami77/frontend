@@ -1,98 +1,116 @@
-// frontend/src/services/ticketService.js
+// src/services/ticketService.js
 import { api } from './api';
 
 export const ticketService = {
-  // Prédire et sauvegarder un ticket
-  async predictAndSave(text, userId = null) {
+  async predict(ticketData) {
     try {
       const response = await api.post('/predict', {
-        text: text,
-        user_id: userId || localStorage.getItem('userId')
+        text: ticketData.description || ticketData.text,
+        title: ticketData.title,
+        priority: ticketData.priority || 'medium',
+        user_id: ticketData.userId || localStorage.getItem('userId')
       });
+      console.log('✅ Ticket créé avec prédiction:', response);
       return response;
     } catch (error) {
-      console.error('Erreur prédiction:', error);
+      console.error('❌ Erreur prédiction:', error);
       throw error;
     }
   },
 
-  // Récupérer tous les tickets
-  async getAllTickets() {
+  async getAllTickets(filters = {}) {
     try {
-      return await api.get('/tickets');
+      const params = new URLSearchParams();
+      if (filters.status) params.append('status', filters.status);
+      if (filters.category) params.append('category', filters.category);
+      if (filters.priority) params.append('priority', filters.priority);
+      if (filters.userId) params.append('user_id', filters.userId);
+      if (filters.limit) params.append('limit', filters.limit || 50);
+      if (filters.skip) params.append('skip', filters.skip || 0);
+      
+      const endpoint = `/tickets${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await api.get(endpoint);
+      console.log('✅ Tickets récupérés:', response.total);
+      return response;
     } catch (error) {
-      console.error('Erreur récupération tickets:', error);
+      console.error('❌ Erreur récupération tickets:', error);
       throw error;
     }
   },
 
-  // Récupérer les tickets d'un utilisateur
-  async getUserTickets(userId) {
+  async getTicketById(ticketId) {
     try {
-      // Votre backend actuel n'a pas de route /tickets/user/:id
-      // Pour l'instant, on retourne tous les tickets
-      return await this.getAllTickets();
+      const response = await api.get(`/tickets/${ticketId}`);
+      console.log('✅ Ticket récupéré:', response);
+      return response;
     } catch (error) {
-      console.error('Erreur récupération tickets utilisateur:', error);
+      console.error('❌ Erreur récupération ticket:', error);
       throw error;
     }
   },
 
-  // Récupérer les tickets par statut
-  async getTicketsByStatus(status) {
+  async updateTicketStatus(ticketId, status) {
     try {
-      // Votre backend n'a pas cette route, on filtre côté client
-      const allTickets = await this.getAllTickets();
-      return allTickets.filter(ticket => ticket.status === status);
+      const response = await api.put(`/tickets/${ticketId}/status`, { status });
+      console.log('✅ Statut mis à jour:', response);
+      return response;
     } catch (error) {
-      console.error('Erreur récupération tickets par statut:', error);
+      console.error('❌ Erreur mise à jour statut:', error);
       throw error;
     }
   },
 
-  // Mettre à jour le statut d'un ticket
-  async updateStatus(ticketId, status) {
+  async updateTicket(ticketId, updateData) {
     try {
-      return await api.put(`/tickets/${ticketId}/status`, { status });
+      const response = await api.put(`/tickets/${ticketId}`, updateData);
+      console.log('✅ Ticket mis à jour:', response);
+      return response;
     } catch (error) {
-      console.error('Erreur mise à jour statut:', error);
+      console.error('❌ Erreur mise à jour ticket:', error);
       throw error;
     }
   },
 
-  // Supprimer un ticket
   async deleteTicket(ticketId) {
     try {
-      return await api.delete(`/tickets/${ticketId}`);
+      const response = await api.delete(`/tickets/${ticketId}`);
+      console.log('✅ Ticket supprimé:', response);
+      return response;
     } catch (error) {
-      console.error('Erreur suppression ticket:', error);
+      console.error('❌ Erreur suppression ticket:', error);
       throw error;
     }
   },
 
-  // Récupérer les statistiques
-  async getStats() {
+  async getTicketsByCategory(category) {
     try {
-      const tickets = await this.getAllTickets();
-      // Calculer les stats côté client
-      const stats = {
-        total: tickets.length,
-        open: tickets.filter(t => t.status === 'open').length,
-        in_progress: tickets.filter(t => t.status === 'in_progress').length,
-        resolved: tickets.filter(t => t.status === 'resolved').length,
-        closed: tickets.filter(t => t.status === 'closed').length,
-        categories: {}
-      };
-      
-      tickets.forEach(ticket => {
-        if (ticket.category) {
-          stats.categories[ticket.category] = (stats.categories[ticket.category] || 0) + 1;
-        }
-      });
-      
-      return stats;
+      const response = await api.get(`/tickets/category/${category}`);
+      console.log(`✅ Tickets de la catégorie ${category}:`, response.count);
+      return response;
     } catch (error) {
-      console.error('Erreur récupération statistiques:', error);
+      console.error('❌ Erreur récupération par catégorie:', error);
+      throw error;
+    }
+  },
+
+  async getTicketStats() {
+    try {
+      const response = await api.get('/stats');
+      console.log('✅ Statistiques récupérées:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Erreur récupération statistiques:', error);
+      throw error;
+    }
+  },
+
+  async healthCheck() {
+    try {
+      const response = await api.get('/health');
+      console.log('✅ Serveur en ligne:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Serveur indisponible:', error);
       throw error;
     }
   }

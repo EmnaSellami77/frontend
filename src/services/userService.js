@@ -1,26 +1,34 @@
-// frontend/src/services/userService.js
-import { api } from './api';
+// src/services/userService.js
+import { authService } from './authService';
 
 export const userService = {
-  // Récupérer tous les utilisateurs
-  async getAllUsers() {
+  async getCurrentUserProfile() {
     try {
-      const users = await api.get('/auth/users');
-      return users;
+      const user = authService.getCurrentUser();
+      return user || null;
     } catch (error) {
-      console.error('Erreur récupération utilisateurs:', error);
+      console.error('❌ Erreur récupération profil:', error);
       throw error;
     }
   },
 
-  // Récupérer un utilisateur spécifique
-  async getUserById(userId) {
+  async updateProfile(userData) {
     try {
-      const user = await api.get(`/auth/users/${userId}`);
-      return user;
+      console.warn('⚠️ Route de mise à jour profil non implémentée');
+      return { error: 'Fonctionnalité à venir' };
     } catch (error) {
-      console.error('Erreur récupération utilisateur:', error);
+      console.error('❌ Erreur mise à jour profil:', error);
       throw error;
     }
   },
+
+  async getAllUsers() {
+    try {
+      console.warn('⚠️ Route de liste utilisateurs non implémentée');
+      return { users: [] };
+    } catch (error) {
+      console.error('❌ Erreur récupération utilisateurs:', error);
+      throw error;
+    }
+  }
 };

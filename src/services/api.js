@@ -1,5 +1,5 @@
-// frontend/src/services/api.js
-const API_BASE_URL = 'http://localhost:5000';  // Pas de /api ici
+// src/services/api.js
+const API_BASE_URL = 'http://localhost:5000';
 
 export const api = {
   async request(endpoint, options = {}) {
@@ -8,6 +8,11 @@ export const api = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
     try {
       const response = await fetch(url, {
@@ -23,7 +28,7 @@ export const api = {
       
       return data;
     } catch (error) {
-      console.error(`Erreur API ${endpoint}:`, error);
+      console.error(`❌ Erreur API ${endpoint}:`, error);
       throw error;
     }
   },

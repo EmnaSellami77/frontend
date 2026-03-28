@@ -1,48 +1,56 @@
-// frontend/src/services/authService.js
+// src/services/authService.js
 import { api } from './api';
 
 export const authService = {
-  // Inscription - utilise /signup (pas /api/auth/signup)
   async signup(userData) {
     try {
-      const response = await api.post('/signup', {
-        name: userData.fullName,
+      const response = await api.post('/auth/signup', {
+        name: userData.name || userData.fullName,
         email: userData.email,
         password: userData.password,
-        role: userData.role || 'developer'
+        role: userData.role || 'user'
       });
+      console.log('✅ Inscription réussie:', response);
       return response;
     } catch (error) {
-      console.error('Erreur inscription:', error);
+      console.error('❌ Erreur inscription:', error);
       throw error;
     }
   },
 
-  // Connexion - utilise /login (pas /api/auth/login)
   async login(credentials) {
     try {
-      const response = await api.post('/login', {
+      const response = await api.post('/auth/login', {
         email: credentials.email,
         password: credentials.password
       });
       
       if (response.user) {
         localStorage.setItem('user', JSON.stringify(response.user));
-        localStorage.setItem('role', response.user.role);
         localStorage.setItem('userId', response.user.id);
+        localStorage.setItem('userRole', response.user.role);
+        localStorage.setItem('userName', response.user.name);
+        
+        if (response.token) {
+          localStorage.setItem('token', response.token);
+        }
       }
       
+      console.log('✅ Connexion réussie:', response);
       return response;
     } catch (error) {
-      console.error('Erreur connexion:', error);
+      console.error('❌ Erreur connexion:', error);
       throw error;
     }
   },
 
   logout() {
     localStorage.removeItem('user');
-    localStorage.removeItem('role');
     localStorage.removeItem('userId');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('token');
+    console.log('👋 Déconnexion effectuée');
   },
 
   getCurrentUser() {
@@ -55,6 +63,14 @@ export const authService = {
   },
 
   getRole() {
-    return localStorage.getItem('role');
+    return localStorage.getItem('userRole');
+  },
+
+  getUserId() {
+    return localStorage.getItem('userId');
+  },
+
+  getUserName() {
+    return localStorage.getItem('userName');
   }
 };
