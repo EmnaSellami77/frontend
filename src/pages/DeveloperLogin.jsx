@@ -23,8 +23,8 @@ function DeveloperLogin() {
     setError("");
 
     try {
-      // Appel API vers le backend
-      const response = await fetch("http://localhost:5000/login", {
+      // CORRECTION : Utiliser la bonne route /auth/login au lieu de /login
+      const response = await fetch("http://localhost:5000/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
