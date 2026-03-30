@@ -470,69 +470,6 @@ const Header = React.memo(({ userName, date, onLogout, onSettings }) => (
 
 Header.displayName = "Header";
 
-const Footer = React.memo(() => {
-  const currentYear = new Date().getFullYear();
-  const navigate = useNavigate();
-  
-  const links = [
-    { label: "À propos", path: "/about" },
-    { label: "Support", path: "/support" },
-    { label: "Confidentialité", path: "/privacy" },
-    { label: "Conditions", path: "/terms" },
-  ];
-  
-  return (
-    <footer style={{
-      marginTop: 40,
-      padding: "24px 0",
-      borderTop: `1px solid ${COLORS.border}`,
-      textAlign: "center",
-    }}>
-      <div style={{
-        maxWidth: 1200,
-        margin: "0 auto",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 16,
-      }}>
-        <div style={{ fontSize: 13, color: COLORS.gray }}>
-          © {currentYear} IT Dashboard. Tous droits réservés.
-        </div>
-        
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-          {links.map(({ label, path }) => (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              style={{
-                fontSize: 13,
-                color: COLORS.gray,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                transition: "color 0.2s",
-                padding: 0,
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = COLORS.primary}
-              onMouseLeave={(e) => e.currentTarget.style.color = COLORS.gray}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        
-        <div style={{ fontSize: 13, color: COLORS.gray }}>
-          Version 2.0.1
-        </div>
-      </div>
-    </footer>
-  );
-});
-
-Footer.displayName = "Footer";
-
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -895,7 +832,7 @@ function UnifiedDashboard() {
                       </div>
                     </th>
                   ))}
-                 </tr>
+                </tr>
               </thead>
 
               <tbody>
@@ -1162,8 +1099,6 @@ function UnifiedDashboard() {
             </div>
           </div>
         )}
-
-        <Footer />
       </div>
 
       <style>{`
