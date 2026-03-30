@@ -13,9 +13,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 
-// IT Dashboard
-import Dashboard from "./pages/Dashboard";
-import Tickets from "./pages/Tickets";
+// IT Dashboard - Page unifiée
+import UnifiedDashboard from "./pages/UnifiedDashboard";
 import Settings from "./pages/Settings";
 
 // Developer Auth
@@ -44,21 +43,22 @@ function App() {
         <Route path="/developer/login" element={<DeveloperLogin />} />
         <Route path="/developer/register" element={<DeveloperSignup />} />
 
-        {/* IT DASHBOARD - Sans Sidebar */}
+        {/* IT DASHBOARD - Interface unifiée (Dashboard + Tickets) */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute allowedRole="it">
-              <Dashboard />
+              <UnifiedDashboard />
             </ProtectedRoute>
           }
         />
 
+        {/* REDIRECTION - L'ancienne route /tickets redirige vers la même interface */}
         <Route
           path="/tickets"
           element={
             <ProtectedRoute allowedRole="it">
-              <Tickets />
+              <UnifiedDashboard />
             </ProtectedRoute>
           }
         />
