@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bar } from "react-chartjs-2";
 import {
@@ -12,8 +12,30 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
+// Fonction pour sauvegarder les tickets dans localStorage
+const saveTicketsToLocalStorage = (tickets) => {
+  localStorage.setItem('tickets', JSON.stringify(tickets));
+  // Déclencher un événement pour mettre à jour les autres onglets
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'tickets',
+    newValue: JSON.stringify(tickets)
+  }));
+};
+
+// Fonction pour charger les tickets depuis localStorage
+const loadTicketsFromLocalStorage = () => {
+  const storedTickets = localStorage.getItem('tickets');
+  if (storedTickets) {
+    return JSON.parse(storedTickets);
+  }
+  return [];
+};
+
 export default function DeveloperDashboard() {
   const navigate = useNavigate();
+  
+  // Récupérer les informations du développeur connecté
+  const [currentUser, setCurrentUser] = useState(null);
 
   const [problem, setProblem] = useState("");
   const [type, setType] = useState("");
@@ -21,46 +43,170 @@ export default function DeveloperDashboard() {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({});
 
+  // Charger les informations du développeur au démarrage
+  useEffect(() => {
+    // Récupérer l'utilisateur depuis localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Erreur lors du chargement de l'utilisateur:", error);
+      }
+    }
+  }, []);
+
+  // Charger les tickets existants au démarrage
+  useEffect(() => {
+    const existingTickets = loadTicketsFromLocalStorage();
+    if (existingTickets.length > 0) {
+      // Filtrer les tickets du développeur actuel
+      const developerTickets = existingTickets.filter(
+        ticket => ticket.developpeur === currentUser?.name || ticket.developpeur === "Développeur"
+      );
+      
+      // Convertir les tickets du format IT vers le format développeur
+      const convertedTickets = developerTickets.map(ticket => ({
+        id: ticket.id,
+        type: ticket.typePersonnalise || mapPriorityToType(ticket.priorite),
+        description: ticket.titre,
+        date: formatDateForDisplay(ticket.dateCreation),
+        originalStatus: ticket.status,
+        originalPriority: ticket.priorite,
+        originalScore: ticket.scoreConfiance,
+        developpeur: ticket.developpeur
+      }));
+      setTickets(convertedTickets);
+      
+      // Calculer les stats
+      const newStats = {};
+      convertedTickets.forEach(ticket => {
+        newStats[ticket.type] = (newStats[ticket.type] || 0) + 1;
+      });
+      setStats(newStats);
+    }
+  }, [currentUser]);
+
+  // Fonction pour mapper la priorité IT vers le type développeur
+  const mapPriorityToType = (priority) => {
+    const mapping = {
+      'Haute': 'Critique',
+      'Moyenne': 'Standard',
+      'Basse': 'Mineur'
+    };
+    return mapping[priority] || 'Standard';
+  };
+
+  // Fonction pour formater la date
+  const formatDateForDisplay = (dateString) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  // Fonction pour mapper le type développeur vers la priorité IT
+  const mapTypeToPriority = (type) => {
+    const typeLower = type.toLowerCase();
+    if (typeLower.includes('critique') || typeLower.includes('urgent') || typeLower.includes('haute')) {
+      return 'Haute';
+    } else if (typeLower.includes('mineur') || typeLower.includes('faible') || typeLower.includes('basse')) {
+      return 'Basse';
+    } else {
+      return 'Moyenne';
+    }
+  };
+
   const handleAnalyze = () => {
     if (!problem || !type) {
       alert("Veuillez remplir tous les champs !");
       return;
     }
 
+    // Récupérer les tickets existants dans localStorage
+    const existingITickets = loadTicketsFromLocalStorage();
+    
+    const developerName = currentUser?.name || "Développeur";
+    
     if (editingId) {
       // Mode édition - mettre à jour le ticket existant
       const oldTicket = tickets.find(t => t.id === editingId);
+      
+      // Mettre à jour dans le format développeur
       const updatedTickets = tickets.map(ticket =>
         ticket.id === editingId
-          ? { ...ticket, type, description: problem, date: new Date().toLocaleString() }
+          ? { 
+              ...ticket, 
+              type, 
+              description: problem, 
+              date: new Date().toLocaleString(),
+              originalPriority: mapTypeToPriority(type)
+            }
+          : ticket
+      );
+      
+      // Mettre à jour dans le format IT
+      const updatedITickets = existingITickets.map(ticket =>
+        ticket.id === editingId
+          ? { 
+              ...ticket, 
+              titre: problem,
+              priorite: mapTypeToPriority(type),
+              typePersonnalise: type,
+              dateCreation: new Date().toISOString(),
+              developpeur: developerName
+            }
           : ticket
       );
       
       // Mettre à jour les statistiques
       const newStats = { ...stats };
-      // Décrémenter l'ancien type
       newStats[oldTicket.type] = (newStats[oldTicket.type] || 1) - 1;
       if (newStats[oldTicket.type] === 0) delete newStats[oldTicket.type];
-      // Incrémenter le nouveau type
       newStats[type] = (newStats[type] || 0) + 1;
       
       setTickets(updatedTickets);
       setStats(newStats);
+      saveTicketsToLocalStorage(updatedITickets);
       setEditingId(null);
     } else {
       // Mode création - ajouter un nouveau ticket
+      const newId = existingITickets.length > 0 
+        ? Math.max(...existingITickets.map(t => t.id), 0) + 1 
+        : 1;
+      
       const newTicket = {
-        id: Date.now(),
+        id: newId,
+        titre: problem,
+        utilisateur: developerName, // Le nom du développeur qui crée le ticket
+        dateCreation: new Date().toISOString(),
+        priorite: mapTypeToPriority(type),
+        scoreConfiance: 0.70, // Score par défaut
+        status: "En attente",
+        typePersonnalise: type, // Sauvegarder le type personnalisé
+        developpeur: developerName
+      };
+      
+      const newDeveloperTicket = {
+        id: newId,
         type,
         description: problem,
         date: new Date().toLocaleString(),
+        originalPriority: mapTypeToPriority(type),
+        originalStatus: "En attente",
+        originalScore: 0.70,
+        developpeur: developerName
       };
       
-      setTickets([...tickets, newTicket]);
+      // Mettre à jour les deux formats
+      const updatedITickets = [...existingITickets, newTicket];
+      const updatedDeveloperTickets = [...tickets, newDeveloperTicket];
+      
+      setTickets(updatedDeveloperTickets);
       setStats({
         ...stats,
         [type]: (stats[type] || 0) + 1
       });
+      
+      saveTicketsToLocalStorage(updatedITickets);
     }
 
     setProblem("");
@@ -75,8 +221,14 @@ export default function DeveloperDashboard() {
 
   const handleDelete = (id, ticketType) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce ticket ?")) {
+      // Supprimer du format développeur
       const updatedTickets = tickets.filter(ticket => ticket.id !== id);
       setTickets(updatedTickets);
+      
+      // Supprimer du format IT
+      const existingITickets = loadTicketsFromLocalStorage();
+      const updatedITickets = existingITickets.filter(ticket => ticket.id !== id);
+      saveTicketsToLocalStorage(updatedITickets);
       
       // Mettre à jour les statistiques
       const newStats = { ...stats };
@@ -92,17 +244,13 @@ export default function DeveloperDashboard() {
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setProblem("");
-    setType("");
-  };
-
   const handleSettings = () => {
     navigate("/developer/settings");
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("role");
+    localStorage.removeItem("user");
     navigate("/");
   };
 
@@ -181,7 +329,12 @@ export default function DeveloperDashboard() {
           <svg style={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
-          <h2 style={styles.title}>Developer Dashboard</h2>
+          <div>
+            <h2 style={styles.title}>Developer Dashboard</h2>
+            {currentUser && (
+              <p style={styles.userInfo}>Connecté en tant que : {currentUser.name}</p>
+            )}
+          </div>
         </div>
         
         <div style={styles.headerRight}>
@@ -232,14 +385,14 @@ export default function DeveloperDashboard() {
                 value={type}
                 onChange={(e) => setType(e.target.value)}
                 style={styles.input}
-                placeholder="Ex: UI/UX, Performance, Sécurité, Bug, etc..."
+                placeholder="Ex: Bug critique, Problème d'interface, Erreur serveur, etc..."
               />
               <div style={styles.hint}>
                 <svg style={styles.hintIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 16v-4M12 8h.01" />
                 </svg>
-                <span>Entrez n'importe quel type de problème</span>
+                <span>Écrivez librement le type de problème (sera affiché dans le tableau IT)</span>
               </div>
             </div>
 
@@ -279,7 +432,11 @@ export default function DeveloperDashboard() {
               </button>
               
               {editingId && (
-                <button onClick={handleCancelEdit} style={styles.cancelButton}>
+                <button onClick={() => {
+                  setEditingId(null);
+                  setProblem("");
+                  setType("");
+                }} style={styles.cancelButton}>
                   <svg style={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
@@ -297,7 +454,7 @@ export default function DeveloperDashboard() {
                 <svg style={styles.ticketsIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 12V8H4v4M20 12v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4M20 12h-4a2 2 0 0 0-2 2v4M4 12h4a2 2 0 0 1 2 2v4" />
                 </svg>
-                <h3 style={styles.ticketsTitle}>Liste des tickets ({tickets.length})</h3>
+                <h3 style={styles.ticketsTitle}>Mes tickets ({tickets.length})</h3>
               </div>
               
               <div style={styles.ticketsContainer}>
@@ -353,7 +510,7 @@ export default function DeveloperDashboard() {
               <polyline points="15 2 21 8 15 8" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <h3 style={styles.statsTitle}>Statistiques des tickets</h3>
+            <h3 style={styles.statsTitle}>Statistiques par type</h3>
           </div>
           
           {categories.length > 0 ? (
@@ -419,7 +576,7 @@ const styles = {
   headerLeft: {
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: "20px",
   },
   headerRight: {
     display: "flex",
@@ -438,6 +595,11 @@ const styles = {
     fontWeight: "600",
     color: "#ffffff",
     letterSpacing: "-0.5px",
+  },
+  userInfo: {
+    margin: "5px 0 0 0",
+    fontSize: "0.85rem",
+    color: "#94a3b8",
   },
   settingsButton: {
     display: "flex",
