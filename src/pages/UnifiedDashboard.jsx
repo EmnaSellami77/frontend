@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 // ============================================
 // CONSTANTS & CONFIGURATION
 // ============================================
 
-const INITIAL_TICKETS_DATA = [
+const TICKETS_DATA = [
   { id: 1, titre: "Problème réseau", utilisateur: "Ahmed", dateCreation: "2026-03-03T14:32:00", priorite: "Haute", scoreConfiance: 0.92, status: "En attente" },
   { id: 2, titre: "Erreur serveur", utilisateur: "Sara", dateCreation: "2026-03-02T10:15:00", priorite: "Moyenne", scoreConfiance: 0.75, status: "Résolu" },
   { id: 3, titre: "Installation logiciel", utilisateur: "Youssef", dateCreation: "2026-03-01T09:20:00", priorite: "Basse", scoreConfiance: 0.60, status: "En attente" },
@@ -195,13 +195,6 @@ const Icons = {
       <path d="M12 6v6l4 2" />
     </IconWrapper>
   )),
-
-  Plus: React.memo(() => (
-    <IconWrapper size={16}>
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </IconWrapper>
-  )),
 };
 
 Object.values(Icons).forEach(icon => {
@@ -211,7 +204,7 @@ Object.values(Icons).forEach(icon => {
 });
 
 // ============================================
-// STYLED COMPONENTS
+// STYLED COMPONENTS (Inline styles with theme)
 // ============================================
 
 const styles = {
@@ -488,7 +481,7 @@ const COLUMNS = [
 function UnifiedDashboard() {
   const navigate = useNavigate();
   const [role] = useLocalStorage("role", null);
-  const [tickets, setTickets] = useState([]);
+  const [tickets, setTickets] = useState(TICKETS_DATA);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "id", direction: "asc" });
   const [modalState, setModalState] = useState({
@@ -498,54 +491,6 @@ function UnifiedDashboard() {
     loading: false,
     error: null,
   });
-
-  // Charger les tickets depuis le localStorage
-  useEffect(() => {
-    const loadTickets = () => {
-      try {
-        // Récupérer les tickets stockés
-        const storedTickets = localStorage.getItem('tickets');
-        if (storedTickets) {
-          const parsedTickets = JSON.parse(storedTickets);
-          setTickets(parsedTickets);
-        } else {
-          // Si aucun ticket n'est stocké, utiliser les données initiales
-          setTickets(INITIAL_TICKETS_DATA);
-          localStorage.setItem('tickets', JSON.stringify(INITIAL_TICKETS_DATA));
-        }
-      } catch (error) {
-        console.error("Erreur lors du chargement des tickets:", error);
-        setTickets(INITIAL_TICKETS_DATA);
-      }
-    };
-
-    loadTickets();
-
-    // Écouter les changements dans le localStorage (pour les mises à jour depuis l'espace développeur)
-    const handleStorageChange = (e) => {
-      if (e.key === 'tickets') {
-        try {
-          const newTickets = JSON.parse(e.newValue);
-          setTickets(newTickets);
-        } catch (error) {
-          console.error("Erreur lors de la mise à jour des tickets:", error);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  // Sauvegarder les tickets dans le localStorage à chaque modification
-  useEffect(() => {
-    if (tickets.length > 0) {
-      localStorage.setItem('tickets', JSON.stringify(tickets));
-    }
-  }, [tickets]);
 
   const currentDate = useMemo(() => 
     new Date().toLocaleDateString("fr-FR", {
@@ -906,15 +851,15 @@ function UnifiedDashboard() {
 
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <Badge config={PRIORITY_CONFIG[ticket.priorite]} />
-                       </td>
+                      </td>
 
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, minWidth: 130 }}>
                         <ScoreBar score={ticket.scoreConfiance} />
-                       </td>
+                      </td>
 
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <Badge config={STATUS_CONFIG[ticket.status]} />
-                       </td>
+                      </td>
 
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <button
@@ -936,8 +881,8 @@ function UnifiedDashboard() {
                           <Icons.AI />
                           Analyser
                         </button>
-                       </td>
-                     </tr>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>
