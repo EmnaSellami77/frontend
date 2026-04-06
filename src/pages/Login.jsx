@@ -17,15 +17,40 @@ function Login() {
       return;
     }
 
-    localStorage.setItem("role", "it");
+    const password = form.password;
 
+    const hasNumber = /\d/.test(password);
+    const hasLetter = /[a-zA-Z]/.test(password);
+
+    if (password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+
+    if (!hasNumber) {
+      setError("Le mot de passe doit contenir au moins un chiffre.");
+      return;
+    }
+
+    if (!hasLetter) {
+      setError("Le mot de passe doit contenir au moins une lettre.");
+      return;
+    }
+
+    setError("");
+
+    localStorage.setItem("role", "it");
     navigate("/dashboard");
   };
 
   return (
     <div className="vh-100 d-flex justify-content-center align-items-center animated-bg">
-      <div className="card p-4 shadow-lg" style={{ width: "400px", borderRadius: "15px" }}>
-       
+      <div
+        className="card p-4 shadow-lg"
+        style={{ width: "400px", borderRadius: "15px" }}
+      >
+        <h3 className="text-center mb-3">Connexion IT</h3>
+
         {error && <div className="alert alert-danger">{error}</div>}
 
         <form onSubmit={handleSubmit}>
@@ -35,7 +60,9 @@ function Login() {
               type="email"
               className="form-control"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
             />
           </div>
 
@@ -45,21 +72,35 @@ function Login() {
               type={isPasswordVisible ? "text" : "password"}
               className="form-control pe-5"
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value })
+              }
             />
+
             <span
-              onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-              style={{ position: "absolute", right: "15px", top: "38px", cursor: "pointer" }}
+              onClick={() =>
+                setIsPasswordVisible(!isPasswordVisible)
+              }
+              style={{
+                position: "absolute",
+                right: "15px",
+                top: "38px",
+                cursor: "pointer",
+              }}
             >
               {isPasswordVisible ? <FaEyeSlash /> : <FaEye />}
             </span>
           </div>
 
           <div className="text-end mb-3">
-            <Link to="/forgot-password?role=it">Mot de passe oublié ?</Link>
+            <Link to="/forgot-password?role=it">
+              Mot de passe oublié ?
+            </Link>
           </div>
 
-          <button className="btn btn-primary w-100">se connecter</button>
+          <button className="btn btn-primary w-100">
+            Se connecter
+          </button>
         </form>
       </div>
     </div>

@@ -11,21 +11,49 @@ function DeveloperLogin() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // ✅ Vérification champs vides
     if (!form.email || !form.password) {
       setError("Tous les champs sont obligatoires.");
       return;
     }
 
-    // Stocke le rôle developer pour ProtectedRoute
+    const password = form.password;
+
+    // 🔐 Conditions mot de passe
+    const hasNumber = /\d/.test(password);
+    const hasLetter = /[a-zA-Z]/.test(password);
+
+    if (password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+
+    if (!hasNumber) {
+      setError("Le mot de passe doit contenir au moins un chiffre.");
+      return;
+    }
+
+    if (!hasLetter) {
+      setError("Le mot de passe doit contenir au moins une lettre.");
+      return;
+    }
+
+    // ✅ OK
+    setError("");
+
+    // 🔐 Stocker rôle developer
     localStorage.setItem("role", "developer");
 
-    // Redirection vers le bon chemin
+    // 🚀 Redirection
     navigate("/developer/dashboard");
   };
 
   return (
     <div className="vh-100 d-flex justify-content-center align-items-center animated-bg">
-      <div className="card p-4 shadow-lg" style={{ width: "400px", borderRadius: "15px" }}>
+      <div
+        className="card p-4 shadow-lg"
+        style={{ width: "400px", borderRadius: "15px" }}
+      >
         {error && <div className="alert alert-danger">{error}</div>}
 
         <form onSubmit={handleSubmit}>
@@ -35,7 +63,9 @@ function DeveloperLogin() {
               type="email"
               className="form-control"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
             />
           </div>
 
@@ -45,21 +75,35 @@ function DeveloperLogin() {
               type={isPasswordVisible ? "text" : "password"}
               className="form-control pe-5"
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value })
+              }
             />
+
             <span
-              onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-              style={{ position: "absolute", right: "15px", top: "38px", cursor: "pointer" }}
+              onClick={() =>
+                setIsPasswordVisible(!isPasswordVisible)
+              }
+              style={{
+                position: "absolute",
+                right: "15px",
+                top: "38px",
+                cursor: "pointer",
+              }}
             >
               {isPasswordVisible ? <FaEyeSlash /> : <FaEye />}
             </span>
           </div>
 
           <div className="text-end mb-3">
-            <Link to="/forgot-password?role=developer">Mot de passe oublié ?</Link>
+            <Link to="/forgot-password?role=developer">
+              Mot de passe oublié ?
+            </Link>
           </div>
 
-          <button className="btn btn-primary w-100">se connecter</button>
+          <button className="btn btn-primary w-100">
+            Se connecter
+          </button>
         </form>
       </div>
     </div>

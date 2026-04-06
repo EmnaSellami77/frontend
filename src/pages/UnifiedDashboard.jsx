@@ -98,20 +98,6 @@ const getScoreColor = (score) => {
   return "#ef4444";
 };
 
-const getSuggestedPriority = (category) => {
-  const priorityMap = {
-    'reseau': 'Haute', 'serveur': 'Haute', 'securite': 'Haute', 'vpn': 'Haute',
-    'logiciel': 'Moyenne', 'installation': 'Moyenne',
-    'mise à jour': 'Basse', 'os': 'Basse'
-  };
-  
-  const categoryLower = category?.toLowerCase() || '';
-  for (const [key, priority] of Object.entries(priorityMap)) {
-    if (categoryLower.includes(key)) return priority;
-  }
-  return 'Moyenne';
-};
-
 // ============================================
 // ICONS COMPONENTS (Optimized)
 // ============================================
@@ -193,6 +179,13 @@ const Icons = {
     <IconWrapper size={16}>
       <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10 10 10 0 0 1-10-10 10 10 0 0 1 10-10z" />
       <path d="M12 6v6l4 2" />
+    </IconWrapper>
+  )),
+
+  Edit: React.memo(() => (
+    <IconWrapper size={14}>
+      <path d="M17 3l4 4-7 7H10v-4l7-7z" />
+      <path d="M4 20h16" />
     </IconWrapper>
   )),
 };
@@ -463,6 +456,87 @@ const Header = React.memo(({ userName, date, onLogout, onSettings }) => (
 
 Header.displayName = "Header";
 
+// Composant Selecteur de Priorité pour IT Consultant
+const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const priorities = ["Haute", "Moyenne", "Basse"];
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "0",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        <Badge config={PRIORITY_CONFIG[currentPriority]} />
+        <Icons.Edit />
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 998,
+            }}
+            onClick={() => setIsOpen(false)}
+          />
+          <div style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            marginTop: 8,
+            background: COLORS.white,
+            borderRadius: 10,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            border: `1px solid ${COLORS.border}`,
+            zIndex: 999,
+            minWidth: 120,
+          }}>
+            {priorities.map(priority => (
+              <button
+                key={priority}
+                onClick={() => {
+                  onPriorityChange(priority);
+                  setIsOpen(false);
+                }}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "background 0.2s",
+                  borderRadius: 10,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = COLORS.background}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <Badge config={PRIORITY_CONFIG[priority]} />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+});
+
+PrioritySelector.displayName = "PrioritySelector";
+
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -492,6 +566,7 @@ function UnifiedDashboard() {
     error: null,
   });
 
+  const isITConsultant = role === "it_consultant" || role === "Consultant IT";
   const currentDate = useMemo(() => 
     new Date().toLocaleDateString("fr-FR", {
       weekday: "long",
@@ -563,6 +638,16 @@ function UnifiedDashboard() {
     }));
   }, []);
 
+  const handlePriorityChange = useCallback((ticketId, newPriority) => {
+    setTickets(prevTickets =>
+      prevTickets.map(ticket =>
+        ticket.id === ticketId
+          ? { ...ticket, priorite: newPriority }
+          : ticket
+      )
+    );
+  }, []);
+
   const analyzeTicket = useCallback(async (ticket) => {
     setModalState({
       isOpen: true,
@@ -602,29 +687,6 @@ function UnifiedDashboard() {
     }
   }, []);
 
-  const handleApplyPrediction = useCallback(() => {
-    const { ticket, prediction } = modalState;
-    if (!ticket || !prediction) return;
-
-    const newPriority = getSuggestedPriority(prediction.category);
-
-    setTickets(prevTickets =>
-      prevTickets.map(t =>
-        t.id === ticket.id
-          ? { ...t, priorite: newPriority, scoreConfiance: prediction.confidence }
-          : t
-      )
-    );
-
-    setModalState({
-      isOpen: false,
-      ticket: null,
-      prediction: null,
-      loading: false,
-      error: null,
-    });
-  }, [modalState]);
-
   const closeModal = useCallback(() => {
     setModalState({
       isOpen: false,
@@ -641,7 +703,7 @@ function UnifiedDashboard() {
         
         {/* Header */}
         <Header
-          userName={role === "developer" ? "Développeur" : "Consultant IT"}
+          userName={isITConsultant ? "IT Consultant" : "Développeur"}
           date={currentDate}
           onLogout={handleLogout}
           onSettings={handleSettings}
@@ -850,9 +912,11 @@ function UnifiedDashboard() {
                       </td>
 
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
-                        <Badge config={PRIORITY_CONFIG[ticket.priorite]} />
+                        <PrioritySelector
+                          currentPriority={ticket.priorite}
+                          onPriorityChange={(newPriority) => handlePriorityChange(ticket.id, newPriority)}
+                        />
                       </td>
-
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, minWidth: 130 }}>
                         <ScoreBar score={ticket.scoreConfiance} />
                       </td>
@@ -1001,20 +1065,12 @@ function UnifiedDashboard() {
                       </p>
                       <ScoreBar score={modalState.prediction.confidence} />
                     </div>
-
-                    <div>
-                      <p style={{ fontSize: 13, color: COLORS.gray, marginBottom: 6 }}>
-                        Priorité suggérée:
-                      </p>
-                      <Badge config={PRIORITY_CONFIG[getSuggestedPriority(modalState.prediction.category)]} />
-                    </div>
                   </div>
 
                   <div style={{
                     display: "flex",
                     gap: 12,
                     justifyContent: "flex-end",
-                    flexWrap: "wrap",
                   }}>
                     <button
                       onClick={closeModal}
@@ -1026,17 +1082,6 @@ function UnifiedDashboard() {
                       }}
                     >
                       Fermer
-                    </button>
-                    <button
-                      onClick={handleApplyPrediction}
-                      style={{
-                        ...styles.button.primary,
-                        padding: "10px 20px",
-                        borderRadius: 8,
-                        fontSize: 14,
-                      }}
-                    >
-                      Appliquer
                     </button>
                   </div>
                 </>

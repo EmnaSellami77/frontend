@@ -33,8 +33,11 @@ export default function Register() {
       return;
     }
     
-    if (form.password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères");
+    // Validation mot de passe : 6 caractères + 1 lettre + 1 chiffre
+    const regex = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
+
+    if (!regex.test(form.password)) {
+      setError("Mot de passe :6 caractères min, lettres et chiffre");
       return;
     }
     
