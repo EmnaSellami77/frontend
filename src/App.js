@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 // Layout
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import ProtectedRoute from "./components/ProtectedRoute";
+
 
 // Public pages
 import HomePage from "./pages/HomePage";
@@ -13,7 +13,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 
-// IT Dashboard - Page unifiée
+// IT Dashboard - Page unifiée (utilisée pour l'IT Consultant)
 import UnifiedDashboard from "./pages/UnifiedDashboard";
 import Settings from "./pages/Settings";
 
@@ -29,72 +29,26 @@ function App() {
   return (
     <Router>
       <Navbar />
-
       <Routes>
-        {/* PUBLIC */}
+        {/* Pages publiques */}
         <Route path="/" element={<HomePage />} />
-
-        {/* IT AUTH */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* DEVELOPER AUTH */}
+        {/* Routes IT Consultant (protégées si nécessaire) */}
+        <Route path="/dashboard" element={<UnifiedDashboard />} />
+        <Route path="/settings" element={<Settings />} />
+
+        {/* Routes Développeur */}
         <Route path="/developer/login" element={<DeveloperLogin />} />
         <Route path="/developer/register" element={<DeveloperSignup />} />
+        <Route path="/developer/dashboard" element={<DeveloperDashboard />} />
+        <Route path="/developer/settings" element={<DeveloperSettings />} />
 
-        {/* IT DASHBOARD - Interface unifiée (Dashboard + Tickets) */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute allowedRole="it">
-              <UnifiedDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* REDIRECTION - L'ancienne route /tickets redirige vers la même interface */}
-        <Route
-          path="/tickets"
-          element={
-            <ProtectedRoute allowedRole="it">
-              <UnifiedDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute allowedRole="it">
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* DEVELOPER DASHBOARD */}
-        <Route
-          path="/developer/dashboard"
-          element={
-            <ProtectedRoute allowedRole="developer">
-              <DeveloperDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/developer/settings"
-          element={
-            <ProtectedRoute allowedRole="developer">
-              <DeveloperSettings />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* 404 */}
+        {/* Redirection par défaut (optionnelle) */}
         <Route path="*" element={<HomePage />} />
       </Routes>
-
       <Footer />
     </Router>
   );
