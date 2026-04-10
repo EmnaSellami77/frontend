@@ -10,14 +10,12 @@ const PRIORITY_CONFIG = {
   Haute:   { bg: "#fef2f2", color: "#dc2626", dot: "#dc2626", label: "Haute" },
   Moyenne: { bg: "#fffbeb", color: "#d97706", dot: "#f59e0b", label: "Moyenne" },
   Basse:   { bg: "#f0fdf4", color: "#16a34a", dot: "#22c55e", label: "Basse" },
-  default: { bg: "#f3f4f6", color: "#6b7280", dot: "#9ca3af", label: "Inconnue" }
 };
 
 const STATUS_CONFIG = {
   "En attente": { bg: "#fffbeb", color: "#b45309", dot: "#f59e0b", label: "En attente" },
   "En cours":   { bg: "#eff6ff", color: "#1d4ed8", dot: "#3b82f6", label: "En cours" },
   "Résolu":     { bg: "#f0fdf4", color: "#15803d", dot: "#22c55e", label: "Résolu" },
-  default:      { bg: "#f3f4f6", color: "#6b7280", dot: "#9ca3af", label: "Inconnu" }
 };
 
 const COLORS = {
@@ -217,15 +215,11 @@ const styles = {
 };
 
 // ============================================
-// COMPOSANTS RÉUTILISABLES (CORRIGÉS)
+// COMPOSANTS RÉUTILISABLES
 // ============================================
 
 const Badge = React.memo(({ config, label }) => {
-<<<<<<< Updated upstream
   const safeConfig = config || PRIORITY_CONFIG["Moyenne"];
-=======
-  const safeConfig = config || PRIORITY_CONFIG.default || { bg: "#f3f4f6", color: "#6b7280", dot: "#9ca3af", label: "Inconnu" };
->>>>>>> Stashed changes
   return (
     <span style={{
       display: "inline-flex",
@@ -313,12 +307,7 @@ const Header = React.memo(({ userName, date, onLogout, onSettings }) => (
 const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const priorities = ["Haute", "Moyenne", "Basse"];
-<<<<<<< Updated upstream
   const safePriority = PRIORITY_CONFIG[currentPriority] ? currentPriority : "Moyenne";
-=======
-  const safePriority = currentPriority && PRIORITY_CONFIG[currentPriority] ? currentPriority : "Moyenne";
-  
->>>>>>> Stashed changes
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setIsOpen(!isOpen)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: 0, background: "none", border: "none", cursor: "pointer" }}>
@@ -344,12 +333,7 @@ const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
 const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const statuses = ["En attente", "En cours", "Résolu"];
-<<<<<<< Updated upstream
   const safeStatus = STATUS_CONFIG[currentStatus] ? currentStatus : "En attente";
-=======
-  const safeStatus = currentStatus && STATUS_CONFIG[currentStatus] ? currentStatus : "En attente";
-  
->>>>>>> Stashed changes
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setIsOpen(!isOpen)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: 0, background: "none", border: "none", cursor: "pointer" }}>
@@ -609,12 +593,8 @@ function UnifiedDashboard() {
                           {typeof ticket.id === 'string' ? ticket.id.slice(-4) : ticket.id}
                         </span>
                       </td>
-<<<<<<< Updated upstream
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, fontWeight: 500, color: COLORS.dark }}>{ticket.type}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.gray, maxWidth: 250, wordBreak: "break-word" }}>{ticket.description}</td>
-=======
-                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, fontWeight: 500, color: COLORS.dark }}>{ticket.titre}</td>
->>>>>>> Stashed changes
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.primaryDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.white, fontSize: 11, fontWeight: 700 }}>{ticket.utilisateur[0]?.toUpperCase()}</div>
