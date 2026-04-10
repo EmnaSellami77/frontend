@@ -38,7 +38,7 @@ const COLORS = {
 
 const API_CONFIG = {
   BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
-  ENDPOINTS: { PREDICT: '/predict' },
+  ENDPOINTS: { PREDICT: '/tickets/predict' },
   TIMEOUT: 10000
 };
 
@@ -47,6 +47,7 @@ const API_CONFIG = {
 // ============================================
 
 const formatDate = (dateString) => {
+  if (!dateString) return "Date inconnue";
   return new Date(dateString).toLocaleString("fr-FR", {
     day: "2-digit",
     month: "short",
@@ -68,11 +69,11 @@ const mapPriorityToDisplay = (priority) => {
 
 const mapDisplayToPriority = (display) => {
   const mapping = { Haute: 'high', Moyenne: 'medium', Basse: 'low' };
-  return mapping[display];
+  return mapping[display] || 'medium';
 };
 
 // ============================================
-// ICONS COMPONENTS (optimized)
+// ICONS COMPONENTS
 // ============================================
 
 const IconWrapper = React.memo(({ children, size = 20, color = "currentColor" }) => (
@@ -217,23 +218,26 @@ const styles = {
 // COMPOSANTS RÉUTILISABLES
 // ============================================
 
-const Badge = React.memo(({ config, label }) => (
-  <span style={{
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 5,
-    background: config.bg,
-    color: config.color,
-    fontSize: 12,
-    fontWeight: 600,
-    padding: "4px 10px",
-    borderRadius: 20,
-    whiteSpace: "nowrap",
-  }}>
-    <span style={{ width: 6, height: 6, borderRadius: "50%", background: config.dot, flexShrink: 0 }} />
-    {label || config.label}
-  </span>
-));
+const Badge = React.memo(({ config, label }) => {
+  const safeConfig = config || PRIORITY_CONFIG["Moyenne"];
+  return (
+    <span style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 5,
+      background: safeConfig.bg,
+      color: safeConfig.color,
+      fontSize: 12,
+      fontWeight: 600,
+      padding: "4px 10px",
+      borderRadius: 20,
+      whiteSpace: "nowrap",
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: safeConfig.dot, flexShrink: 0 }} />
+      {label || safeConfig.label}
+    </span>
+  );
+});
 
 const ScoreBar = React.memo(({ score }) => {
   const pct = Math.round(score * 100);
@@ -303,10 +307,11 @@ const Header = React.memo(({ userName, date, onLogout, onSettings }) => (
 const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const priorities = ["Haute", "Moyenne", "Basse"];
+  const safePriority = PRIORITY_CONFIG[currentPriority] ? currentPriority : "Moyenne";
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setIsOpen(!isOpen)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: 0, background: "none", border: "none", cursor: "pointer" }}>
-        <Badge config={PRIORITY_CONFIG[currentPriority]} />
+        <Badge config={PRIORITY_CONFIG[safePriority]} />
         <Icons.Edit />
       </button>
       {isOpen && (
@@ -328,10 +333,11 @@ const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
 const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const statuses = ["En attente", "En cours", "Résolu"];
+  const safeStatus = STATUS_CONFIG[currentStatus] ? currentStatus : "En attente";
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setIsOpen(!isOpen)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: 0, background: "none", border: "none", cursor: "pointer" }}>
-        <Badge config={STATUS_CONFIG[currentStatus]} />
+        <Badge config={STATUS_CONFIG[safeStatus]} />
         <Icons.Edit />
       </button>
       {isOpen && (
@@ -351,15 +357,17 @@ const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
 });
 
 // ============================================
-// COMPOSANT PRINCIPAL
+// COMPOSANT PRINCIPAL (IT)
 // ============================================
 
 const COLUMNS = [
   { key: "id", label: "#", sortable: true },
-  { key: "titre", label: "Titre", sortable: true },
+  { key: "type", label: "Type de problème", sortable: true },
+  { key: "description", label: "Description", sortable: false },
   { key: "utilisateur", label: "Créé par", sortable: true },
   { key: "dateCreation", label: "Date", sortable: true },
-  { key: "priorite", label: "Priorité", sortable: true },
+  { key: "prioriteIA", label: "Priorité IA", sortable: true },
+  { key: "priorite", label: "Priorité actuelle", sortable: true },
   { key: "scoreConfiance", label: "Score IA", sortable: true },
   { key: "status", label: "Statut", sortable: true },
   { key: "actions", label: "Actions", sortable: false },
@@ -387,12 +395,14 @@ function UnifiedDashboard() {
       const response = await API.get(url);
       const data = response.data;
       const formatted = data.map(t => ({
-        id: t._id,
-        titre: t.titre,
-        utilisateur: t.user_name || "Inconnu",
-        dateCreation: t.dateCreation,
+        id: t._id || `temp-${Math.random()}`,
+        type: t.type_personnalise || "Standard",
+        description: t.description || t.titre || "Aucune description",
+        utilisateur: t.user_name || t.user_email || "Inconnu",
+        dateCreation: t.dateCreation || new Date().toISOString(),
+        prioriteIA: mapPriorityToDisplay(t.priorite_predite || t.priorite),
         priorite: mapPriorityToDisplay(t.priorite),
-        scoreConfiance: t.scoreConfiance || 0.75,
+        scoreConfiance: t.scoreConfiance !== undefined ? t.scoreConfiance : 0.75,
         status: t.status || "En attente"
       }));
       setTickets(formatted);
@@ -404,9 +414,20 @@ function UnifiedDashboard() {
     }
   }, [role]);
 
+  // Chargement initial et polling toutes les 5 secondes
   useEffect(() => {
     if (role !== null) fetchTickets();
   }, [role, fetchTickets]);
+
+  useEffect(() => {
+    // Polling : rafraîchit les tickets toutes les 5s pour synchroniser avec les actions des développeurs
+    const interval = setInterval(() => {
+      if (role !== null && !loading) {
+        fetchTickets();
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [role, fetchTickets, loading]);
 
   const isITConsultant = role === "it_consultant" || role === "Consultant IT" || role === "it";
   const currentDate = useMemo(() => new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }), []);
@@ -421,13 +442,23 @@ function UnifiedDashboard() {
     let result = [...tickets];
     if (search) {
       const lower = search.toLowerCase();
-      result = result.filter(t => t.utilisateur.toLowerCase().includes(lower) || t.titre.toLowerCase().includes(lower));
+      result = result.filter(t => 
+        (t.type || "").toLowerCase().includes(lower) || 
+        (t.description || "").toLowerCase().includes(lower) ||
+        (t.utilisateur || "").toLowerCase().includes(lower)
+      );
     }
     const { key, direction } = sortConfig;
     if (key && key !== 'actions') {
       result.sort((a, b) => {
-        let aVal = a[key], bVal = b[key];
-        if (typeof aVal === "string") { aVal = aVal.toLowerCase(); bVal = bVal.toLowerCase(); }
+        let aVal = a[key];
+        let bVal = b[key];
+        if (aVal === undefined || aVal === null) aVal = '';
+        if (bVal === undefined || bVal === null) bVal = '';
+        if (typeof aVal === "string") {
+          aVal = aVal.toLowerCase();
+          bVal = bVal.toLowerCase();
+        }
         if (aVal < bVal) return direction === "asc" ? -1 : 1;
         if (aVal > bVal) return direction === "asc" ? 1 : -1;
         return 0;
@@ -452,14 +483,20 @@ function UnifiedDashboard() {
     try {
       await API.patch(`/tickets/${ticketId}/priority`, { priority: mapDisplayToPriority(newPriorityDisplay) });
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, priorite: newPriorityDisplay } : t));
-    } catch (err) { alert("Erreur mise à jour priorité"); }
+    } catch (err) { 
+      console.error(err);
+      alert("Erreur mise à jour priorité"); 
+    }
   };
 
   const handleStatusChange = async (ticketId, newStatus) => {
     try {
       await API.put(`/tickets/${ticketId}`, { status: newStatus });
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
-    } catch (err) { alert("Erreur mise à jour statut"); }
+    } catch (err) { 
+      console.error(err);
+      alert("Erreur mise à jour statut"); 
+    }
   };
 
   const handleDelete = async (ticketId) => {
@@ -467,7 +504,10 @@ function UnifiedDashboard() {
     try {
       await API.delete(`/tickets/${ticketId}`);
       setTickets(prev => prev.filter(t => t.id !== ticketId));
-    } catch (err) { alert("Erreur suppression"); }
+    } catch (err) { 
+      console.error(err);
+      alert("Erreur suppression"); 
+    }
   };
 
   const analyzeTicket = async (ticket) => {
@@ -475,15 +515,15 @@ function UnifiedDashboard() {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
-      const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: ticket.titre }),
+        body: JSON.stringify({ text: ticket.type + " " + ticket.description }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
-      if (!res.ok) throw new Error(`Erreur ${res.status}`);
-      const data = await res.json();
+      if (!response.ok) throw new Error(`Erreur ${response.status}`);
+      const data = await response.json();
       setModalState(prev => ({ ...prev, prediction: data, loading: false }));
     } catch (err) {
       setModalState(prev => ({ ...prev, error: err.message, loading: false }));
@@ -492,7 +532,7 @@ function UnifiedDashboard() {
 
   const closeModal = () => setModalState({ isOpen: false, ticket: null, prediction: null, loading: false, error: null });
 
-  if (loading) {
+  if (loading && tickets.length === 0) {
     return (
       <div style={styles.container}>
         <div style={styles.contentWrapper}>
@@ -521,7 +561,7 @@ function UnifiedDashboard() {
             <span style={{ fontWeight: 600, color: COLORS.dark, fontSize: 14 }}>{filteredAndSortedTickets.length} ticket(s) trouvé(s)</span>
             <div style={{ position: "relative", width: 280 }}>
               <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: COLORS.lightGray }}><Icons.Search /></span>
-              <input type="text" placeholder="Rechercher titre ou créateur…" value={search} onChange={(e) => setSearch(e.target.value)} style={styles.searchInput} />
+              <input type="text" placeholder="Rechercher type, description ou créateur…" value={search} onChange={(e) => setSearch(e.target.value)} style={styles.searchInput} />
               {search && <button onClick={() => setSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: COLORS.border, border: "none", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Icons.X /></button>}
             </div>
           </div>
@@ -542,7 +582,9 @@ function UnifiedDashboard() {
               </thead>
               <tbody>
                 {filteredAndSortedTickets.length === 0 ? (
-                  <tr><td colSpan={8} style={{ padding: "48px 0", textAlign: "center", color: COLORS.lightGray }}>Aucun ticket trouvé</td></tr>
+                  <tr>
+                    <td colSpan={10} style={{ padding: "48px 0", textAlign: "center", color: COLORS.lightGray }}>Aucun ticket trouvé</td>
+                  </tr>
                 ) : (
                   filteredAndSortedTickets.map((ticket, idx) => (
                     <tr key={ticket.id} style={{ background: idx % 2 === 0 ? COLORS.white : "#fafafa" }}>
@@ -550,8 +592,9 @@ function UnifiedDashboard() {
                         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, background: COLORS.primaryLight, color: COLORS.primary, borderRadius: 6, fontWeight: 700, fontSize: 12 }}>
                           {typeof ticket.id === 'string' ? ticket.id.slice(-4) : ticket.id}
                         </span>
-                       </td>
-                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, fontWeight: 500, color: COLORS.dark }}>{ticket.titre}</td>
+                      </td>
+                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, fontWeight: 500, color: COLORS.dark }}>{ticket.type}</td>
+                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.gray, maxWidth: 250, wordBreak: "break-word" }}>{ticket.description}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.primaryDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.white, fontSize: 11, fontWeight: 700 }}>{ticket.utilisateur[0]?.toUpperCase()}</div>
@@ -560,9 +603,14 @@ function UnifiedDashboard() {
                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.gray }}>{formatDate(ticket.dateCreation)}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
+                        <Badge config={PRIORITY_CONFIG[ticket.prioriteIA] || PRIORITY_CONFIG["Moyenne"]} />
+                      </td>
+                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <PrioritySelector currentPriority={ticket.priorite} onPriorityChange={(p) => handlePriorityChange(ticket.id, p)} />
                       </td>
-                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, minWidth: 130 }}><ScoreBar score={ticket.scoreConfiance} /></td>
+                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, minWidth: 130 }}>
+                        <ScoreBar score={ticket.scoreConfiance} />
+                      </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <StatusSelector currentStatus={ticket.status} onStatusChange={(s) => handleStatusChange(ticket.id, s)} />
                       </td>
@@ -606,7 +654,8 @@ function UnifiedDashboard() {
               ) : modalState.prediction && (
                 <>
                   <div style={{ background: COLORS.background, borderRadius: 12, padding: 20, marginBottom: 20 }}>
-                    <p><strong>Titre:</strong> {modalState.ticket?.titre}</p>
+                    <p><strong>Type:</strong> {modalState.ticket?.type}</p>
+                    <p><strong>Description:</strong> {modalState.ticket?.description}</p>
                     <div style={{ marginBottom: 16 }}>
                       <p style={{ fontSize: 13, color: COLORS.gray, marginBottom: 6 }}>Catégorie prédite :</p>
                       <div style={{ background: COLORS.primaryLight, color: COLORS.primary, padding: "10px 16px", borderRadius: 8, fontWeight: 700 }}>{modalState.prediction.prediction || modalState.prediction.category}</div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bar } from "react-chartjs-2";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,15 +11,9 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import API from "../services/api";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
-
-const API_BASE = "http://localhost:5000";
-
-const getAuthHeaders = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${localStorage.getItem("token")}`,
-});
 
 export default function DeveloperDashboard() {
   const navigate = useNavigate();
@@ -26,6 +22,7 @@ export default function DeveloperDashboard() {
   const [type, setType] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [tickets, setTickets] = useState([]);
+  const [prevTickets, setPrevTickets] = useState([]);
   const [stats, setStats] = useState({});
 
   useEffect(() => {
@@ -39,45 +36,54 @@ export default function DeveloperDashboard() {
     }
   }, []);
 
-  // Charger les tickets depuis le backend (route /tickets/my)
   const fetchTickets = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE}/tickets/my`, {
-        headers: getAuthHeaders(),
-      });
-      if (!response.ok) {
-        if (response.status === 401) {
-          navigate("/developer/login");
-          return;
-        }
-        throw new Error("Erreur chargement tickets");
-      }
-      const data = await response.json();
-      // Transformer les données backend vers le format attendu par le frontend
-      const converted = data.map((t) => ({
+      const response = await API.get('/tickets/my');
+      const data = response.data;
+      const converted = data.map(t => ({
         id: t._id,
-        type: t.type_personnalise || "Standard",   // type saisi par le développeur
-        description: t.titre,                      // le titre du ticket
+        type: t.type_personnalise || "Standard",
+        description: t.titre,
         date: new Date(t.dateCreation).toLocaleString(),
-        priority: t.priorite,                      // "high"/"medium"/"low"
-        status: t.status,
+        priority: t.priorite,
+        status: t.status || "En attente",
+        scoreConfiance: t.scoreConfiance || 0.75
       }));
+      
+      // Détection des tickets nouvellement résolus (pour notification)
+      const newResolved = converted.filter(t => 
+        t.status === "Résolu" && 
+        prevTickets.find(prev => prev.id === t.id)?.status !== "Résolu"
+      );
+      
+      newResolved.forEach(ticket => {
+        toast.success(`✅ Ticket "${ticket.type}" (${ticket.id.slice(-4)}) a été marqué comme RÉSOLU par l’équipe IT !`, {
+          position: "top-right",
+          autoClose: 6000,
+        });
+      });
+      
       setTickets(converted);
+      setPrevTickets(converted);
+      
       const newStats = {};
-      converted.forEach((t) => {
+      converted.forEach(t => {
         newStats[t.type] = (newStats[t.type] || 0) + 1;
       });
       setStats(newStats);
     } catch (err) {
       console.error(err);
+      if (err.response?.status === 401) navigate("/developer/login");
     }
-  }, [navigate]);
+  }, [prevTickets, navigate]);
 
+  // Chargement initial et polling toutes les 5s
   useEffect(() => {
     fetchTickets();
+    const interval = setInterval(() => fetchTickets(), 5000);
+    return () => clearInterval(interval);
   }, [fetchTickets]);
 
-  // Convertir le type saisi par le développeur en priorité backend
   const mapTypeToPriority = (type) => {
     const t = type.toLowerCase();
     if (t.includes("critique") || t.includes("urgent") || t.includes("haute")) return "high";
@@ -93,41 +99,29 @@ export default function DeveloperDashboard() {
 
     try {
       if (editingId) {
-        // Mise à jour : on ne peut modifier que le titre et le type personnalisé
-        const response = await fetch(`${API_BASE}/tickets/${editingId}`, {
-          method: "PUT",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            titre: problem,
-            type_personnalise: type,
-          }),
+        // Mise à jour : envoyer les champs autorisés par le backend
+        await API.put(`/tickets/${editingId}`, {
+          titre: problem,
+          type_personnalise: type,
         });
-        if (!response.ok) throw new Error("Erreur mise à jour");
-        const updatedTicket = await response.json();
-        // Rafraîchir la liste
-        await fetchTickets();
-        setEditingId(null);
+        toast.info("Ticket modifié avec succès");
       } else {
-        // Création : le champ "subject" est le titre, "body" est la description
-        // On stocke le type saisi dans type_personnalise
-        const response = await fetch(`${API_BASE}/tickets/create`, {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            subject: problem,        // titre du ticket
-            body: problem,           // description (ici on utilise la même valeur, mais vous pourriez séparer)
-            type_personnalise: type, // type saisi par le développeur
-          }),
+        // Création
+        await API.post('/tickets/create', {
+          subject: problem,
+          body: problem,
+          type_personnalise: type,
         });
-        if (!response.ok) throw new Error("Erreur création ticket");
-        await fetchTickets();
+        toast.success("Ticket créé avec succès");
       }
+      await fetchTickets();
+      setProblem("");
+      setType("");
+      setEditingId(null);
     } catch (err) {
-      alert("Erreur : " + err.message);
+      console.error(err);
+      alert("Erreur : " + (err.response?.data?.error || err.message));
     }
-
-    setProblem("");
-    setType("");
   };
 
   const handleEdit = (ticket) => {
@@ -136,14 +130,11 @@ export default function DeveloperDashboard() {
     setProblem(ticket.description);
   };
 
-  const handleDelete = async (id, ticketType) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce ticket ?")) return;
+  const handleDelete = async (id) => {
+    if (!window.confirm("Supprimer définitivement ce ticket ?")) return;
     try {
-      const response = await fetch(`${API_BASE}/tickets/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-      if (!response.ok) throw new Error("Erreur suppression");
+      await API.delete(`/tickets/${id}`);
+      toast.warn("Ticket supprimé");
       await fetchTickets();
       if (editingId === id) {
         setEditingId(null);
@@ -151,7 +142,7 @@ export default function DeveloperDashboard() {
         setType("");
       }
     } catch (err) {
-      alert("Erreur : " + err.message);
+      alert("Erreur suppression : " + err.message);
     }
   };
 
@@ -165,7 +156,6 @@ export default function DeveloperDashboard() {
 
   const categories = Object.keys(stats);
   const values = Object.values(stats);
-
   const generateColor = (index) => {
     const colors = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#ec489a", "#06b6d4", "#84cc16", "#f97316", "#14b8a6", "#6366f1", "#a855f7"];
     return colors[index % colors.length];
@@ -188,9 +178,75 @@ export default function DeveloperDashboard() {
 
   const totalTickets = values.reduce((sum, val) => sum + val, 0);
 
-  // Le reste (JSX et styles) est identique à l'original
+  // Styles (inchangés, identiques à votre version)
+  const styles = {
+    page: { backgroundColor: "#f9fafb", minHeight: "100vh", padding: "30px", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
+    header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px", padding: "20px 30px", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: "16px", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02)" },
+    headerLeft: { display: "flex", alignItems: "center", gap: "20px" },
+    headerRight: { display: "flex", alignItems: "center", gap: "12px" },
+    logoIcon: { width: "32px", height: "32px", color: "#60a5fa", stroke: "currentColor" },
+    title: { margin: 0, fontSize: "1.8rem", fontWeight: "600", color: "#ffffff", letterSpacing: "-0.5px" },
+    userInfo: { margin: "5px 0 0 0", fontSize: "0.85rem", color: "#94a3b8" },
+    settingsButton: { display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", backgroundColor: "rgba(255, 255, 255, 0.1)", border: "1px solid rgba(255, 255, 255, 0.2)", borderRadius: "12px", color: "#ffffff", fontSize: "0.95rem", fontWeight: "500", cursor: "pointer", backdropFilter: "blur(10px)" },
+    settingsIcon: { width: "18px", height: "18px", stroke: "currentColor" },
+    logout: { display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", backgroundColor: "rgba(255, 255, 255, 0.1)", border: "1px solid rgba(255, 255, 255, 0.2)", borderRadius: "12px", color: "#ffffff", fontSize: "0.95rem", fontWeight: "500", cursor: "pointer", backdropFilter: "blur(10px)" },
+    logoutIcon: { width: "18px", height: "18px", stroke: "currentColor" },
+    container: { display: "flex", gap: "30px", marginTop: "10px" },
+    leftColumn: { flex: 1, display: "flex", flexDirection: "column", gap: "30px" },
+    card: { backgroundColor: "#ffffff", padding: "30px", borderRadius: "20px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", border: "1px solid #e5e7eb" },
+    cardHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "25px" },
+    cardIcon: { width: "28px", height: "28px", color: "#3b82f6", stroke: "currentColor" },
+    cardTitle: { margin: 0, fontSize: "1.4rem", fontWeight: "600", color: "#1e293b" },
+    formGroup: { marginBottom: "20px" },
+    label: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px", fontSize: "0.95rem", fontWeight: "500", color: "#475569" },
+    labelIcon: { width: "16px", height: "16px", stroke: "#94a3b8" },
+    input: { width: "100%", padding: "12px 16px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "0.95rem", color: "#1e293b", outline: "none", fontFamily: "inherit" },
+    hint: { display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", fontSize: "0.8rem", color: "#94a3b8" },
+    hintIcon: { width: "14px", height: "14px", stroke: "#94a3b8" },
+    textarea: { width: "100%", padding: "12px 16px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "0.95rem", color: "#1e293b", resize: "vertical", outline: "none", fontFamily: "inherit" },
+    buttonGroup: { display: "flex", gap: "12px" },
+    button: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", flex: 1, padding: "14px", background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", border: "none", borderRadius: "12px", color: "#ffffff", fontSize: "1rem", fontWeight: "600", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)" },
+    cancelButton: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", flex: 1, padding: "14px", backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "12px", color: "#475569", fontSize: "1rem", fontWeight: "600", cursor: "pointer" },
+    buttonIcon: { width: "18px", height: "18px", stroke: "currentColor" },
+    ticketsListCard: { backgroundColor: "#ffffff", padding: "30px", borderRadius: "20px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", border: "1px solid #e5e7eb" },
+    ticketsHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" },
+    ticketsIcon: { width: "28px", height: "28px", color: "#10b981", stroke: "currentColor" },
+    ticketsTitle: { margin: 0, fontSize: "1.4rem", fontWeight: "600", color: "#1e293b" },
+    ticketsContainer: { display: "flex", flexDirection: "column", gap: "12px", maxHeight: "400px", overflowY: "auto" },
+    ticketItem: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "16px", backgroundColor: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" },
+    ticketContent: { flex: 1 },
+    ticketHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px", flexWrap: "wrap" },
+    ticketType: { padding: "4px 12px", borderRadius: "20px", fontSize: "0.85rem", fontWeight: "600", color: "#ffffff" },
+    ticketDate: { fontSize: "0.8rem", color: "#94a3b8" },
+    ticketDescription: { margin: 0, fontSize: "0.9rem", color: "#475569", lineHeight: "1.5" },
+    ticketActions: { display: "flex", gap: "8px", marginLeft: "12px" },
+    editButton: { padding: "8px", backgroundColor: "#e6f0ff", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
+    deleteButton: { padding: "8px", backgroundColor: "#fee2e2", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
+    actionIcon: { width: "18px", height: "18px", stroke: "currentColor" },
+    statsCard: { width: "500px", backgroundColor: "#ffffff", padding: "30px", borderRadius: "20px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", border: "1px solid #e5e7eb", alignSelf: "flex-start" },
+    statsHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "25px" },
+    statsIcon: { width: "28px", height: "28px", color: "#8b5cf6", stroke: "currentColor" },
+    statsTitle: { margin: 0, fontSize: "1.4rem", fontWeight: "600", color: "#1e293b" },
+    chartContainer: { height: "250px", marginBottom: "25px" },
+    summaryContainer: { backgroundColor: "#f8fafc", borderRadius: "16px", padding: "20px" },
+    summaryItem: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" },
+    summaryLabel: { fontSize: "1rem", color: "#64748b" },
+    summaryValue: { fontSize: "1.5rem", fontWeight: "700", color: "#1e293b" },
+    summaryDivider: { height: "1px", backgroundColor: "#e2e8f0", margin: "15px 0" },
+    summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px" },
+    summaryGridItem: { display: "flex", alignItems: "center", gap: "8px" },
+    summaryDot: { width: "10px", height: "10px", borderRadius: "50%" },
+    summaryGridLabel: { fontSize: "0.9rem", color: "#64748b", flex: 1 },
+    summaryGridValue: { fontSize: "1rem", fontWeight: "600", color: "#1e293b" },
+    emptyState: { textAlign: "center", padding: "50px 20px", color: "#94a3b8" },
+    emptyIcon: { width: "64px", height: "64px", margin: "0 auto 20px", stroke: "#cbd5e1" },
+    emptyText: { fontSize: "1rem", fontWeight: "500", color: "#64748b", marginBottom: "8px" },
+    emptySubtext: { fontSize: "0.9rem", color: "#94a3b8" },
+  };
+
   return (
     <div style={styles.page}>
+      <ToastContainer />
       <div style={styles.header}>
         <div style={styles.headerLeft}>
           <svg style={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -307,7 +363,7 @@ export default function DeveloperDashboard() {
                           <polygon points="18 2 22 6 12 16 8 16 8 12 18 2" />
                         </svg>
                       </button>
-                      <button onClick={() => handleDelete(ticket.id, ticket.type)} style={styles.deleteButton} title="Supprimer">
+                      <button onClick={() => handleDelete(ticket.id)} style={styles.deleteButton} title="Supprimer">
                         <svg style={styles.actionIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                           <line x1="10" y1="11" x2="10" y2="17" />
@@ -367,69 +423,3 @@ export default function DeveloperDashboard() {
     </div>
   );
 }
-
-// Styles (inchangés)
-const styles = {
-  page: { backgroundColor: "#f9fafb", minHeight: "100vh", padding: "30px", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px", padding: "20px 30px", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: "16px", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02)" },
-  headerLeft: { display: "flex", alignItems: "center", gap: "20px" },
-  headerRight: { display: "flex", alignItems: "center", gap: "12px" },
-  logoIcon: { width: "32px", height: "32px", color: "#60a5fa", stroke: "currentColor" },
-  title: { margin: 0, fontSize: "1.8rem", fontWeight: "600", color: "#ffffff", letterSpacing: "-0.5px" },
-  userInfo: { margin: "5px 0 0 0", fontSize: "0.85rem", color: "#94a3b8" },
-  settingsButton: { display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", backgroundColor: "rgba(255, 255, 255, 0.1)", border: "1px solid rgba(255, 255, 255, 0.2)", borderRadius: "12px", color: "#ffffff", fontSize: "0.95rem", fontWeight: "500", cursor: "pointer", backdropFilter: "blur(10px)" },
-  settingsIcon: { width: "18px", height: "18px", stroke: "currentColor" },
-  logout: { display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", backgroundColor: "rgba(255, 255, 255, 0.1)", border: "1px solid rgba(255, 255, 255, 0.2)", borderRadius: "12px", color: "#ffffff", fontSize: "0.95rem", fontWeight: "500", cursor: "pointer", backdropFilter: "blur(10px)" },
-  logoutIcon: { width: "18px", height: "18px", stroke: "currentColor" },
-  container: { display: "flex", gap: "30px", marginTop: "10px" },
-  leftColumn: { flex: 1, display: "flex", flexDirection: "column", gap: "30px" },
-  card: { backgroundColor: "#ffffff", padding: "30px", borderRadius: "20px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", border: "1px solid #e5e7eb" },
-  cardHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "25px" },
-  cardIcon: { width: "28px", height: "28px", color: "#3b82f6", stroke: "currentColor" },
-  cardTitle: { margin: 0, fontSize: "1.4rem", fontWeight: "600", color: "#1e293b" },
-  formGroup: { marginBottom: "20px" },
-  label: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px", fontSize: "0.95rem", fontWeight: "500", color: "#475569" },
-  labelIcon: { width: "16px", height: "16px", stroke: "#94a3b8" },
-  input: { width: "100%", padding: "12px 16px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "0.95rem", color: "#1e293b", outline: "none", fontFamily: "inherit" },
-  hint: { display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", fontSize: "0.8rem", color: "#94a3b8" },
-  hintIcon: { width: "14px", height: "14px", stroke: "#94a3b8" },
-  textarea: { width: "100%", padding: "12px 16px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "0.95rem", color: "#1e293b", resize: "vertical", outline: "none", fontFamily: "inherit" },
-  buttonGroup: { display: "flex", gap: "12px" },
-  button: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", flex: 1, padding: "14px", background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", border: "none", borderRadius: "12px", color: "#ffffff", fontSize: "1rem", fontWeight: "600", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)" },
-  cancelButton: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", flex: 1, padding: "14px", backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "12px", color: "#475569", fontSize: "1rem", fontWeight: "600", cursor: "pointer" },
-  buttonIcon: { width: "18px", height: "18px", stroke: "currentColor" },
-  ticketsListCard: { backgroundColor: "#ffffff", padding: "30px", borderRadius: "20px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", border: "1px solid #e5e7eb" },
-  ticketsHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" },
-  ticketsIcon: { width: "28px", height: "28px", color: "#10b981", stroke: "currentColor" },
-  ticketsTitle: { margin: 0, fontSize: "1.4rem", fontWeight: "600", color: "#1e293b" },
-  ticketsContainer: { display: "flex", flexDirection: "column", gap: "12px", maxHeight: "400px", overflowY: "auto" },
-  ticketItem: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "16px", backgroundColor: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" },
-  ticketContent: { flex: 1 },
-  ticketHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px", flexWrap: "wrap" },
-  ticketType: { padding: "4px 12px", borderRadius: "20px", fontSize: "0.85rem", fontWeight: "600", color: "#ffffff" },
-  ticketDate: { fontSize: "0.8rem", color: "#94a3b8" },
-  ticketDescription: { margin: 0, fontSize: "0.9rem", color: "#475569", lineHeight: "1.5" },
-  ticketActions: { display: "flex", gap: "8px", marginLeft: "12px" },
-  editButton: { padding: "8px", backgroundColor: "#e6f0ff", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
-  deleteButton: { padding: "8px", backgroundColor: "#fee2e2", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
-  actionIcon: { width: "18px", height: "18px", stroke: "currentColor" },
-  statsCard: { width: "500px", backgroundColor: "#ffffff", padding: "30px", borderRadius: "20px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", border: "1px solid #e5e7eb", alignSelf: "flex-start" },
-  statsHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "25px" },
-  statsIcon: { width: "28px", height: "28px", color: "#8b5cf6", stroke: "currentColor" },
-  statsTitle: { margin: 0, fontSize: "1.4rem", fontWeight: "600", color: "#1e293b" },
-  chartContainer: { height: "250px", marginBottom: "25px" },
-  summaryContainer: { backgroundColor: "#f8fafc", borderRadius: "16px", padding: "20px" },
-  summaryItem: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" },
-  summaryLabel: { fontSize: "1rem", color: "#64748b" },
-  summaryValue: { fontSize: "1.5rem", fontWeight: "700", color: "#1e293b" },
-  summaryDivider: { height: "1px", backgroundColor: "#e2e8f0", margin: "15px 0" },
-  summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px" },
-  summaryGridItem: { display: "flex", alignItems: "center", gap: "8px" },
-  summaryDot: { width: "10px", height: "10px", borderRadius: "50%" },
-  summaryGridLabel: { fontSize: "0.9rem", color: "#64748b", flex: 1 },
-  summaryGridValue: { fontSize: "1rem", fontWeight: "600", color: "#1e293b" },
-  emptyState: { textAlign: "center", padding: "50px 20px", color: "#94a3b8" },
-  emptyIcon: { width: "64px", height: "64px", margin: "0 auto 20px", stroke: "#cbd5e1" },
-  emptyText: { fontSize: "1rem", fontWeight: "500", color: "#64748b", marginBottom: "8px" },
-  emptySubtext: { fontSize: "0.9rem", color: "#94a3b8" },
-};
