@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import API from "../services/api";
 
 function Login() {
   const navigate = useNavigate();
@@ -8,8 +9,9 @@ function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.email || !form.password) {
@@ -17,30 +19,32 @@ function Login() {
       return;
     }
 
-    const password = form.password;
-
-    const hasNumber = /\d/.test(password);
-    const hasLetter = /[a-zA-Z]/.test(password);
-
-    if (password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères.");
-      return;
-    }
-
-    if (!hasNumber) {
-      setError("Le mot de passe doit contenir au moins un chiffre.");
-      return;
-    }
-
-    if (!hasLetter) {
-      setError("Le mot de passe doit contenir au moins une lettre.");
-      return;
-    }
-
+    setLoading(true);
     setError("");
 
-    localStorage.setItem("role", "it");
-    navigate("/dashboard");
+    try {
+      // Appel API pour la connexion
+      const response = await API.post("/auth/login", {
+        email: form.email,
+        password: form.password
+      });
+
+      const { token, user } = response.data;
+
+      // Stockage des données
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("role", user.role || "it_consultant");
+
+      // Redirection vers le dashboard
+      navigate("/dashboard");
+      
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || "Email ou mot de passe incorrect";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,6 +67,7 @@ function Login() {
               onChange={(e) =>
                 setForm({ ...form, email: e.target.value })
               }
+              disabled={loading}
             />
           </div>
 
@@ -75,6 +80,7 @@ function Login() {
               onChange={(e) =>
                 setForm({ ...form, password: e.target.value })
               }
+              disabled={loading}
             />
 
             <span
@@ -98,8 +104,8 @@ function Login() {
             </Link>
           </div>
 
-          <button className="btn btn-primary w-100">
-            Se connecter
+          <button className="btn btn-primary w-100" type="submit" disabled={loading}>
+            {loading ? "Connexion en cours..." : "Se connecter"}
           </button>
         </form>
       </div>

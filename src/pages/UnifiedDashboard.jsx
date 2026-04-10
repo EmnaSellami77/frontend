@@ -1,17 +1,10 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../services/api";
 
 // ============================================
 // CONSTANTS & CONFIGURATION
 // ============================================
-
-const TICKETS_DATA = [
-  { id: 1, titre: "Problème réseau", utilisateur: "Ahmed", dateCreation: "2026-03-03T14:32:00", priorite: "Haute", scoreConfiance: 0.92, status: "En attente" },
-  { id: 2, titre: "Erreur serveur", utilisateur: "Sara", dateCreation: "2026-03-02T10:15:00", priorite: "Moyenne", scoreConfiance: 0.75, status: "Résolu" },
-  { id: 3, titre: "Installation logiciel", utilisateur: "Youssef", dateCreation: "2026-03-01T09:20:00", priorite: "Basse", scoreConfiance: 0.60, status: "En attente" },
-  { id: 4, titre: "Accès refusé VPN", utilisateur: "Lina", dateCreation: "2026-03-01T11:05:00", priorite: "Haute", scoreConfiance: 0.88, status: "En cours" },
-  { id: 5, titre: "Mise à jour OS", utilisateur: "Karim", dateCreation: "2026-02-28T16:45:00", priorite: "Basse", scoreConfiance: 0.55, status: "Résolu" },
-];
 
 const PRIORITY_CONFIG = {
   Haute:   { bg: "#fef2f2", color: "#dc2626", dot: "#dc2626", label: "Haute" },
@@ -52,34 +45,6 @@ const API_CONFIG = {
 };
 
 // ============================================
-// CUSTOM HOOKS
-// ============================================
-
-const useLocalStorage = (key, initialValue) => {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
-    }
-  });
-
-  const setValue = useCallback((value) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error);
-    }
-  }, [key, storedValue]);
-
-  return [storedValue, setValue];
-};
-
-// ============================================
 // UTILITY FUNCTIONS
 // ============================================
 
@@ -96,6 +61,16 @@ const getScoreColor = (score) => {
   if (score > 0.8) return "#22c55e";
   if (score > 0.5) return "#f59e0b";
   return "#ef4444";
+};
+
+// Convertir priorité API vers format affichage
+const mapPriorityToDisplay = (priority) => {
+  const mapping = {
+    'high': 'Haute',
+    'medium': 'Moyenne',
+    'low': 'Basse'
+  };
+  return mapping[priority] || 'Moyenne';
 };
 
 // ============================================
@@ -554,8 +529,9 @@ const COLUMNS = [
 
 function UnifiedDashboard() {
   const navigate = useNavigate();
-  const [role] = useLocalStorage("role", null);
-  const [tickets, setTickets] = useState(TICKETS_DATA);
+  const [role, setRole] = useState(null);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "id", direction: "asc" });
   const [modalState, setModalState] = useState({
@@ -566,7 +542,43 @@ function UnifiedDashboard() {
     error: null,
   });
 
-  const isITConsultant = role === "it_consultant" || role === "Consultant IT";
+  // Récupérer le rôle depuis localStorage
+  useEffect(() => {
+    const storedRole = localStorage.getItem("role");
+    setRole(storedRole);
+  }, []);
+
+  // Charger les tickets depuis l'API
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      const response = await API.get('/tickets/my');
+      const ticketsData = response.data;
+      
+      // Convertir les tickets du format API vers le format d'affichage
+      const formattedTickets = ticketsData.map((ticket, index) => ({
+        id: ticket._id,
+        titre: ticket.titre,
+        utilisateur: "Consultant", // À améliorer avec le nom réel
+        dateCreation: ticket.dateCreation,
+        priorite: mapPriorityToDisplay(ticket.priorite),
+        scoreConfiance: ticket.scoreConfiance || 0.75,
+        status: ticket.status || "En attente"
+      }));
+      
+      setTickets(formattedTickets);
+    } catch (error) {
+      console.error("Erreur lors du chargement des tickets:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isITConsultant = role === "it_consultant" || role === "Consultant IT" || role === "it";
   const currentDate = useMemo(() => 
     new Date().toLocaleDateString("fr-FR", {
       weekday: "long",
@@ -622,7 +634,9 @@ function UnifiedDashboard() {
 
   // Handlers
   const handleLogout = useCallback(() => {
+    localStorage.removeItem("token");
     localStorage.removeItem("role");
+    localStorage.removeItem("user");
     navigate("/");
   }, [navigate]);
 
@@ -638,14 +652,30 @@ function UnifiedDashboard() {
     }));
   }, []);
 
-  const handlePriorityChange = useCallback((ticketId, newPriority) => {
-    setTickets(prevTickets =>
-      prevTickets.map(ticket =>
-        ticket.id === ticketId
-          ? { ...ticket, priorite: newPriority }
-          : ticket
-      )
-    );
+  const handlePriorityChange = useCallback(async (ticketId, newPriority) => {
+    // Convertir la priorité d'affichage vers le format API
+    const priorityMap = {
+      'Haute': 'high',
+      'Moyenne': 'medium',
+      'Basse': 'low'
+    };
+    
+    try {
+      await API.patch(`/tickets/${ticketId}/priority`, {
+        priority: priorityMap[newPriority]
+      });
+      
+      // Mettre à jour l'état local
+      setTickets(prevTickets =>
+        prevTickets.map(ticket =>
+          ticket.id === ticketId
+            ? { ...ticket, priorite: newPriority }
+            : ticket
+        )
+      );
+    } catch (error) {
+      console.error("Erreur lors du changement de priorité:", error);
+    }
   }, []);
 
   const analyzeTicket = useCallback(async (ticket) => {
@@ -696,6 +726,27 @@ function UnifiedDashboard() {
       error: null,
     });
   }, []);
+
+  if (loading) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.contentWrapper}>
+          <div style={{ textAlign: "center", padding: "50px" }}>
+            <div style={{
+              width: 50,
+              height: 50,
+              border: `3px solid ${COLORS.border}`,
+              borderTop: `3px solid ${COLORS.primary}`,
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto 20px",
+            }} />
+            <p style={{ color: COLORS.gray }}>Chargement des tickets...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -878,7 +929,7 @@ function UnifiedDashboard() {
                           fontWeight: 700,
                           fontSize: 12,
                         }}>
-                          {ticket.id}
+                          {typeof ticket.id === 'string' ? ticket.id.slice(-4) : ticket.id}
                         </span>
                       </td>
 
@@ -940,7 +991,7 @@ function UnifiedDashboard() {
                           }}
                           onMouseEnter={(e) => e.currentTarget.style.opacity = "0.88"}
                           onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
-                          aria-label={`Analyser le ticket ${ticket.id}`}
+                          aria-label={`Analyser le ticket`}
                         >
                           <Icons.AI />
                           Analyser
@@ -997,7 +1048,7 @@ function UnifiedDashboard() {
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: COLORS.dark, margin: 0 }}>
-                  Analyse IA du Ticket #{modalState.ticket?.id}
+                  Analyse IA du Ticket #{typeof modalState.ticket?.id === 'string' ? modalState.ticket.id.slice(-4) : modalState.ticket?.id}
                 </h2>
                 <button
                   onClick={closeModal}
@@ -1055,7 +1106,7 @@ function UnifiedDashboard() {
                         fontWeight: 700,
                         fontSize: 16,
                       }}>
-                        {modalState.prediction.category}
+                        {modalState.prediction.prediction || modalState.prediction.category}
                       </div>
                     </div>
 
@@ -1063,7 +1114,7 @@ function UnifiedDashboard() {
                       <p style={{ fontSize: 13, color: COLORS.gray, marginBottom: 6 }}>
                         Niveau de confiance:
                       </p>
-                      <ScoreBar score={modalState.prediction.confidence} />
+                      <ScoreBar score={modalState.prediction.confidence || 0.75} />
                     </div>
                   </div>
 

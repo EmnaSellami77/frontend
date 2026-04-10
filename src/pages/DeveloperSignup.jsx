@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import API from "../services/api";
 
 export default function DeveloperSignup() {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ export default function DeveloperSignup() {
     if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validation
@@ -48,19 +49,25 @@ export default function DeveloperSignup() {
       return;
     }
     
-    // Simulation d'inscription
     setLoading(true);
-    setTimeout(() => {
-      // Sauvegarder dans localStorage (simulation)
-      localStorage.setItem("developer", JSON.stringify({
+    
+    try {
+      // Appel API pour l'inscription avec rôle developer
+      const response = await API.post("/auth/signup", {
         name: form.fullName,
-        email: form.email
-      }));
+        email: form.email,
+        password: form.password,
+        role: "developer"
+      });
       
       setLoading(false);
       // Rediriger vers la page de login
       navigate("/developer/login");
-    }, 1500);
+    } catch (err) {
+      setLoading(false);
+      const errorMessage = err.response?.data?.error || "Erreur lors de l'inscription";
+      setError(errorMessage);
+    }
   };
 
   return (
@@ -115,6 +122,7 @@ export default function DeveloperSignup() {
               onChange={handleChange}
               placeholder="John Doe"
               style={styles.input}
+              disabled={loading}
             />
           </div>
 
@@ -134,6 +142,7 @@ export default function DeveloperSignup() {
               onChange={handleChange}
               placeholder="emna@example.com"
               style={styles.input}
+              disabled={loading}
             />
           </div>
 
@@ -154,11 +163,13 @@ export default function DeveloperSignup() {
                 onChange={handleChange}
                 placeholder="••••••••"
                 style={styles.passwordInput}
+                disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 style={styles.eyeButton}
+                disabled={loading}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
@@ -182,11 +193,13 @@ export default function DeveloperSignup() {
                 onChange={handleChange}
                 placeholder="••••••••"
                 style={styles.passwordInput}
+                disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 style={styles.eyeButton}
+                disabled={loading}
               >
                 {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
@@ -195,7 +208,7 @@ export default function DeveloperSignup() {
 
           {/* Conditions d'utilisation */}
           <div style={styles.termsContainer}>
-            <input type="checkbox" id="terms" style={styles.checkbox} />
+            <input type="checkbox" id="terms" style={styles.checkbox} disabled={loading} />
             <label htmlFor="terms" style={styles.termsLabel}>
               J'accepte les <a href="/terms" style={styles.termsLink}>conditions d'utilisation</a>
             </label>
