@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import API from "../services/api";
 
 function DeveloperLogin() {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ function DeveloperLogin() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // ✅ Vérification champs vides
@@ -41,11 +42,25 @@ function DeveloperLogin() {
     // ✅ OK
     setError("");
 
-    // 🔐 Stocker rôle developer
-    localStorage.setItem("role", "developer");
+    try {
+      // 🔐 Appel API pour la connexion
+      const response = await API.post("/auth/login", {
+        email: form.email,
+        password: form.password
+      });
 
-    // 🚀 Redirection
-    navigate("/developer/dashboard");
+      const { token, user } = response.data;
+
+      // Stockage des données
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("role", "developer");
+
+      // 🚀 Redirection
+      navigate("/developer/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur de connexion");
+    }
   };
 
   return (

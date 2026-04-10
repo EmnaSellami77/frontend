@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import API from "../services/api";
 
 const EyeIcon = ({ open }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -45,14 +46,17 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState("profile");
   const [saved, setSaved] = useState(false);
   const [pwdSaved, setPwdSaved] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   const [user, setUser] = useState({
-    nom: "Hajri",
-    prenom: "Emna",
-    email: "consultant.it@gmail.com",
+    nom: "",
+    prenom: "",
+    email: "",
     role: "IT Consultant",
-    phone: "+216 98 765 432",
-    location: "Tunis, Tunisie",
+    phone: "",
+    location: "",
   });
 
   const [passwords, setPasswords] = useState({
@@ -62,6 +66,34 @@ export default function Settings() {
   });
 
   const [show, setShow] = useState({ current: false, new: false, confirm: false });
+
+  // Charger les données utilisateur au démarrage
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        setUserId(userData._id);
+        
+        // Séparer le nom complet en nom et prénom
+        const fullName = userData.name || "";
+        const nameParts = fullName.split(" ");
+        const prenom = nameParts[0] || "";
+        const nom = nameParts.slice(1).join(" ") || "";
+        
+        setUser({
+          nom: nom,
+          prenom: prenom,
+          email: userData.email || "",
+          role: "IT Consultant",
+          phone: userData.phone || "",
+          location: userData.location || "",
+        });
+      } catch (error) {
+        console.error("Erreur lors du chargement de l'utilisateur:", error);
+      }
+    }
+  }, []);
 
   const calculateStrength = (pw) => {
     let s = 0;
@@ -80,19 +112,76 @@ export default function Settings() {
     { label: "Fort", color: "#22c55e" },
   ];
 
-  const handleSaveProfile = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSaveProfile = async () => {
+    setLoading(true);
+    setError("");
+    
+    try {
+      const fullName = `${user.prenom} ${user.nom}`.trim();
+      
+      await API.put(`/user/${userId}`, {
+        name: fullName,
+        email: user.email,
+        phone: user.phone,
+        location: user.location
+      });
+      
+      // Mettre à jour localStorage
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        userData.name = fullName;
+        userData.email = user.email;
+        userData.phone = user.phone;
+        userData.location = user.location;
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+      
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur lors de l'enregistrement");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePasswordUpdate = () => {
-    if (passwords.newPassword !== passwords.confirmPassword) return;
-    setPwdSaved(true);
-    setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    setTimeout(() => setPwdSaved(false), 2500);
+  const handlePasswordUpdate = async () => {
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setError("Les mots de passe ne correspondent pas");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+    
+    if (passwords.newPassword && passwords.newPassword.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+    
+    setLoading(true);
+    setError("");
+    
+    try {
+      await API.post("/user/change-password", {
+        userId: userId,
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword
+      });
+      
+      setPwdSaved(true);
+      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setTimeout(() => setPwdSaved(false), 2500);
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur lors du changement de mot de passe");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const initials = `${user.prenom[0]}${user.nom[0]}`.toUpperCase();
+  const initials = `${(user.prenom?.[0] || "U")}${(user.nom?.[0] || "S")}`.toUpperCase();
 
   const tabs = [
     { id: "profile", label: "Profil", icon: <UserIcon /> },
@@ -120,6 +209,23 @@ export default function Settings() {
             Gérez vos informations personnelles et la sécurité de votre compte.
           </p>
         </div>
+
+        {/* Message d'erreur */}
+        {error && (
+          <div style={{
+            background: "#fef2f2",
+            color: "#dc2626",
+            padding: "12px 16px",
+            borderRadius: 10,
+            marginBottom: 20,
+            fontSize: 14,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}>
+            <span>❌</span> {error}
+          </div>
+        )}
 
         {/* Profile Card */}
         <div style={{
@@ -174,6 +280,7 @@ export default function Settings() {
                 color: activeTab === tab.id ? "#0f172a" : "#64748b",
                 boxShadow: activeTab === tab.id ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
               }}
+              disabled={loading}
             >
               {tab.icon} {tab.label}
             </button>
@@ -225,6 +332,7 @@ export default function Settings() {
                       }}
                       onFocus={e => e.target.style.borderColor = "#6366f1"}
                       onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+                      disabled={loading}
                     />
                   </div>
                 ))}
@@ -259,8 +367,9 @@ export default function Settings() {
                   }}
                   onMouseEnter={e => e.target.style.opacity = "0.88"}
                   onMouseLeave={e => e.target.style.opacity = "1"}
+                  disabled={loading}
                 >
-                  Enregistrer les modifications
+                  {loading ? "Enregistrement..." : "Enregistrer les modifications"}
                 </button>
                 {saved && (
                   <div style={{
@@ -317,6 +426,7 @@ export default function Settings() {
                           }}
                           onFocus={e => { if (!isConfirm || !passwords.confirmPassword) e.target.style.borderColor = "#6366f1"; }}
                           onBlur={e => { if (!isConfirm || !passwords.confirmPassword) e.target.style.borderColor = "#e2e8f0"; }}
+                          disabled={loading}
                         />
                         <button
                           onClick={() => setShow(s => ({ ...s, [showKey]: !s[showKey] }))}
@@ -325,6 +435,7 @@ export default function Settings() {
                             background: "none", border: "none", cursor: "pointer",
                             color: "#94a3b8", display: "flex", padding: 0,
                           }}
+                          disabled={loading}
                         >
                           <EyeIcon open={show[showKey]} />
                         </button>
@@ -367,6 +478,7 @@ export default function Settings() {
                 <button
                   onClick={handlePasswordUpdate}
                   disabled={
+                    loading ||
                     !passwords.currentPassword ||
                     !passwords.newPassword ||
                     passwords.newPassword !== passwords.confirmPassword
@@ -382,7 +494,7 @@ export default function Settings() {
                     fontSize: 14, cursor: "pointer", transition: "all 0.2s",
                   }}
                 >
-                  Mettre à jour le mot de passe
+                  {loading ? "Mise à jour..." : "Mettre à jour le mot de passe"}
                 </button>
                 {pwdSaved && (
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#22c55e", fontSize: 13, fontWeight: 600 }}>
