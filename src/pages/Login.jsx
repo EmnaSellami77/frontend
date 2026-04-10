@@ -23,7 +23,7 @@ function Login() {
       const { token, user } = res.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('role', user.role);   // ← stocker le rôle
+      localStorage.setItem('role', user.role);
 
       // Redirection selon le rôle
       if (user.role === 'developer') {
@@ -35,8 +35,6 @@ function Login() {
       setError(err.response?.data?.error || "Identifiants incorrects");
     }
   };
-
-
 
   return (
     <div className="vh-100 d-flex justify-content-center align-items-center animated-bg">

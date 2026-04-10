@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { GoogleLogin } from '@react-oauth/google';
 import API from "../services/api";
 
 export default function DeveloperSignup() {
@@ -47,55 +48,398 @@ export default function DeveloperSignup() {
     }
   };
 
-  // Styles identiques à Register (vous pouvez les copier depuis Register.jsx)
-  const styles = { /* reprendre exactement les styles de Register.jsx */ };
-  // Pour gagner de la place, je ne les répète pas ici, mais vous pouvez les réutiliser.
+  // ⭐ Inscription développeur avec Google
+  const handleGoogleSuccess = async (credentialResponse) => {
+    const id_token = credentialResponse.credential;
+    
+    setLoading(true);
+    try {
+      const response = await API.post('/auth/google', {
+        id_token: id_token
+      });
+      
+      const data = response.data;
+      
+      if (data.success) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        const role = data.user.role || 'developer';
+        localStorage.setItem('role', role);
+        
+        // Redirection vers dashboard développeur
+        navigate("/developer/dashboard");
+      } else {
+        setError(data.error || "Erreur d'inscription avec Google");
+      }
+    } catch (err) {
+      console.error('Erreur Google:', err);
+      setError(err.response?.data?.error || "Erreur lors de l'inscription avec Google");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.log('Inscription Google échouée');
+    setError("L'inscription avec Google a échoué. Veuillez réessayer.");
+  };
+
+  // Styles identiques à Register
+  const styles = {
+    container: {
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "#f9fafb",
+      padding: "20px",
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      position: "relative",
+    },
+    backButton: {
+      position: "absolute",
+      top: "20px",
+      left: "20px",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      padding: "8px 16px",
+      backgroundColor: "#ffffff",
+      border: "1px solid #e2e8f0",
+      borderRadius: "10px",
+      color: "#475569",
+      fontSize: "0.95rem",
+      fontWeight: "500",
+      cursor: "pointer",
+      transition: "all 0.2s ease",
+      zIndex: 10,
+    },
+    card: {
+      backgroundColor: "#ffffff",
+      padding: "40px",
+      borderRadius: "24px",
+      boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02)",
+      border: "1px solid #e5e7eb",
+      width: "100%",
+      maxWidth: "450px",
+    },
+    header: {
+      textAlign: "center",
+      marginBottom: "30px",
+    },
+    iconContainer: {
+      width: "64px",
+      height: "64px",
+      margin: "0 auto 16px",
+      backgroundColor: "#eef2ff",
+      borderRadius: "16px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    logo: {
+      width: "36px",
+      height: "36px",
+      color: "#3b82f6",
+      stroke: "currentColor",
+    },
+    subtitle: {
+      margin: 0,
+      fontSize: "0.95rem",
+      color: "#64748b",
+    },
+    errorMessage: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      padding: "12px 16px",
+      backgroundColor: "#fef2f2",
+      border: "1px solid #fee2e2",
+      borderRadius: "12px",
+      color: "#ef4444",
+      fontSize: "0.9rem",
+      marginBottom: "20px",
+    },
+    form: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "20px",
+    },
+    formGroup: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "6px",
+    },
+    label: {
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      fontSize: "0.9rem",
+      fontWeight: "500",
+      color: "#475569",
+    },
+    input: {
+      padding: "12px 16px",
+      backgroundColor: "#f8fafc",
+      border: "1px solid #e2e8f0",
+      borderRadius: "12px",
+      fontSize: "0.95rem",
+      color: "#1e293b",
+      outline: "none",
+      transition: "all 0.2s ease",
+    },
+    passwordContainer: {
+      position: "relative",
+      display: "flex",
+      alignItems: "center",
+    },
+    passwordInput: {
+      flex: 1,
+      padding: "12px 16px",
+      backgroundColor: "#f8fafc",
+      border: "1px solid #e2e8f0",
+      borderRadius: "12px",
+      fontSize: "0.95rem",
+      color: "#1e293b",
+      outline: "none",
+      paddingRight: "45px",
+    },
+    eyeButton: {
+      position: "absolute",
+      right: "12px",
+      background: "none",
+      border: "none",
+      color: "#64748b",
+      cursor: "pointer",
+      fontSize: "1.1rem",
+      display: "flex",
+      alignItems: "center",
+      padding: "4px",
+    },
+    termsContainer: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      marginTop: "10px",
+    },
+    checkbox: {
+      width: "16px",
+      height: "16px",
+      cursor: "pointer",
+    },
+    termsLabel: {
+      fontSize: "0.9rem",
+      color: "#475569",
+    },
+    termsLink: {
+      color: "#3b82f6",
+      textDecoration: "none",
+      fontWeight: "500",
+    },
+    button: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "8px",
+      padding: "14px",
+      background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+      border: "none",
+      borderRadius: "12px",
+      color: "#ffffff",
+      fontSize: "1rem",
+      fontWeight: "600",
+      cursor: "pointer",
+      transition: "all 0.2s ease",
+      boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)",
+      marginTop: "10px",
+    },
+    loginContainer: {
+      textAlign: "center",
+      marginTop: "20px",
+    },
+    loginLink: {
+      color: "#3b82f6",
+      textDecoration: "none",
+      fontWeight: "500",
+    },
+    separator: {
+      position: "relative",
+      textAlign: "center",
+      margin: "20px 0",
+    },
+    separatorText: {
+      position: "relative",
+      backgroundColor: "#ffffff",
+      padding: "0 10px",
+      color: "#94a3b8",
+      fontSize: "0.9rem",
+      zIndex: 2,
+    },
+    socialContainer: {
+      display: "grid",
+      gridTemplateColumns: "1fr",
+      gap: "12px",
+      marginTop: "10px",
+    },
+    socialButton: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "8px",
+      padding: "10px",
+      backgroundColor: "#ffffff",
+      border: "1px solid #e2e8f0",
+      borderRadius: "10px",
+      color: "#1e293b",
+      fontSize: "0.9rem",
+      fontWeight: "500",
+      cursor: "pointer",
+      transition: "all 0.2s ease",
+    },
+    socialIcon: {
+      width: "18px",
+      height: "18px",
+    },
+  };
 
   return (
     <div style={styles.container}>
       <button onClick={() => navigate(-1)} style={styles.backButton}>
-        <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+        <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
         Retour
       </button>
+
       <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.iconContainer}>
-            <svg style={styles.logo} viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+            <svg style={styles.logo} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
           </div>
           <p style={styles.subtitle}>Créez votre compte développeur</p>
         </div>
-        {error && <div style={styles.errorMessage}>...</div>}
+
+        {error && (
+          <div style={styles.errorMessage}>
+            <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <circle cx="12" cy="16" r="1" fill="currentColor" />
+            </svg>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.formGroup}>
             <label style={styles.label}>Nom complet</label>
-            <input type="text" name="fullName" value={form.fullName} onChange={handleChange} placeholder="John Doe" style={styles.input} />
+            <input
+              type="text"
+              name="fullName"
+              value={form.fullName}
+              onChange={handleChange}
+              placeholder="John Doe"
+              style={styles.input}
+              disabled={loading}
+            />
           </div>
+
           <div style={styles.formGroup}>
             <label style={styles.label}>Email</label>
-            <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="john@example.com" style={styles.input} />
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="john@example.com"
+              style={styles.input}
+              disabled={loading}
+            />
           </div>
+
           <div style={styles.formGroup}>
             <label style={styles.label}>Mot de passe</label>
             <div style={styles.passwordContainer}>
-              <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} placeholder="••••••••" style={styles.passwordInput} />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} style={styles.eyeButton}>{showPassword ? <FaEyeSlash /> : <FaEye />}</button>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                style={styles.passwordInput}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+                disabled={loading}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
             </div>
           </div>
+
           <div style={styles.formGroup}>
             <label style={styles.label}>Confirmer le mot de passe</label>
             <div style={styles.passwordContainer}>
-              <input type={showConfirmPassword ? "text" : "password"} name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="••••••••" style={styles.passwordInput} />
-              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>{showConfirmPassword ? <FaEyeSlash /> : <FaEye />}</button>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                placeholder="••••••••"
+                style={styles.passwordInput}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeButton}
+                disabled={loading}
+              >
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
             </div>
           </div>
+
           <div style={styles.termsContainer}>
-            <input type="checkbox" id="terms" style={styles.checkbox} />
-            <label htmlFor="terms" style={styles.termsLabel}>J'accepte les <a href="/terms" style={styles.termsLink}>conditions d'utilisation</a></label>
+            <input type="checkbox" id="terms" style={styles.checkbox} disabled={loading} />
+            <label htmlFor="terms" style={styles.termsLabel}>
+              J'accepte les <a href="/terms" style={styles.termsLink}>conditions d'utilisation</a>
+            </label>
           </div>
-          <button type="submit" style={styles.button} disabled={loading}>{loading ? "Création..." : "Créer mon compte"}</button>
+
+          <button type="submit" style={styles.button} disabled={loading}>
+            {loading ? "Création..." : "Créer mon compte"}
+          </button>
         </form>
+
         <div style={styles.loginContainer}>
           <p>Déjà un compte ? <Link to="/developer/login" style={styles.loginLink}>Se connecter</Link></p>
+        </div>
+
+        {/* ⭐ SÉPARATEUR + BOUTON GOOGLE */}
+        <div style={styles.separator}>
+          <span style={styles.separatorText}>ou</span>
+        </div>
+
+        <div style={styles.socialContainer}>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              text="signup_with"
+              theme="outline"
+              size="large"
+              shape="rectangular"
+              width="200"
+            />
+          </div>
         </div>
       </div>
     </div>
