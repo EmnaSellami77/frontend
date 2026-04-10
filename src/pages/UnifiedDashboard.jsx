@@ -38,9 +38,7 @@ const COLORS = {
 
 const API_CONFIG = {
   BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
-  ENDPOINTS: {
-    PREDICT: '/predict'
-  },
+  ENDPOINTS: { PREDICT: '/predict' },
   TIMEOUT: 10000
 };
 
@@ -63,28 +61,18 @@ const getScoreColor = (score) => {
   return "#ef4444";
 };
 
-// Convertir priorité API (high/medium/low) vers affichage (Haute/Moyenne/Basse)
 const mapPriorityToDisplay = (priority) => {
-  const mapping = {
-    'high': 'Haute',
-    'medium': 'Moyenne',
-    'low': 'Basse'
-  };
+  const mapping = { high: 'Haute', medium: 'Moyenne', low: 'Basse' };
   return mapping[priority] || 'Moyenne';
 };
 
-// Convertir affichage vers API
 const mapDisplayToPriority = (display) => {
-  const mapping = {
-    'Haute': 'high',
-    'Moyenne': 'medium',
-    'Basse': 'low'
-  };
+  const mapping = { Haute: 'high', Moyenne: 'medium', Basse: 'low' };
   return mapping[display];
 };
 
 // ============================================
-// ICONS COMPONENTS (identique à l'existant)
+// ICONS COMPONENTS (optimized)
 // ============================================
 
 const IconWrapper = React.memo(({ children, size = 20, color = "currentColor" }) => (
@@ -92,8 +80,6 @@ const IconWrapper = React.memo(({ children, size = 20, color = "currentColor" })
     {children}
   </svg>
 ));
-
-IconWrapper.displayName = "IconWrapper";
 
 const Icons = {
   Logout: React.memo(() => (
@@ -140,7 +126,7 @@ const Icons = {
   )),
   Chevron: React.memo(({ dir }) => (
     <IconWrapper size={12} strokeWidth="2.5">
-      <polyline points={`${dir === "down" ? "6 9 12 15 18 9" : "18 15 12 9 6 15"}`} />
+      <polyline points={dir === "down" ? "6 9 12 15 18 9" : "18 15 12 9 6 15"} />
     </IconWrapper>
   )),
   AI: React.memo(() => (
@@ -165,14 +151,8 @@ const Icons = {
   )),
 };
 
-Object.values(Icons).forEach(icon => {
-  if (icon.displayName === undefined) {
-    icon.displayName = `Icon${icon.name || 'Component'}`;
-  }
-});
-
 // ============================================
-// STYLES (inchangés)
+// STYLES
 // ============================================
 
 const styles = {
@@ -238,7 +218,7 @@ const styles = {
 // ============================================
 
 const Badge = React.memo(({ config, label }) => (
-  <span className="badge" style={{
+  <span style={{
     display: "inline-flex",
     alignItems: "center",
     gap: 5,
@@ -255,8 +235,6 @@ const Badge = React.memo(({ config, label }) => (
   </span>
 ));
 
-Badge.displayName = "Badge";
-
 const ScoreBar = React.memo(({ score }) => {
   const pct = Math.round(score * 100);
   const color = getScoreColor(score);
@@ -269,8 +247,6 @@ const ScoreBar = React.memo(({ score }) => {
     </div>
   );
 });
-
-ScoreBar.displayName = "ScoreBar";
 
 const StatCard = React.memo(({ icon: Icon, label, value, color, bg }) => (
   <div style={{ ...styles.card, padding: "20px 24px", borderTop: `3px solid ${color}`, flex: 1, minWidth: 200 }}>
@@ -285,8 +261,6 @@ const StatCard = React.memo(({ icon: Icon, label, value, color, bg }) => (
     </div>
   </div>
 ));
-
-StatCard.displayName = "StatCard";
 
 const Header = React.memo(({ userName, date, onLogout, onSettings }) => (
   <div style={{
@@ -316,19 +290,16 @@ const Header = React.memo(({ userName, date, onLogout, onSettings }) => (
       </p>
     </div>
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <button onClick={onSettings} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", background: "rgba(255,255,255,0.07)", color: COLORS.border, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, fontWeight: 600, fontSize: 13.5, cursor: "pointer", transition: "all 0.2s" }}>
+      <button onClick={onSettings} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", background: "rgba(255,255,255,0.07)", color: COLORS.border, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>
         <Icons.Settings /> Paramètres
       </button>
-      <button onClick={onLogout} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", background: "rgba(255,255,255,0.07)", color: COLORS.border, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, fontWeight: 600, fontSize: 13.5, cursor: "pointer", transition: "all 0.2s" }}>
+      <button onClick={onLogout} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", background: "rgba(255,255,255,0.07)", color: COLORS.border, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>
         <Icons.Logout /> Déconnexion
       </button>
     </div>
   </div>
 ));
 
-Header.displayName = "Header";
-
-// Sélecteur de priorité avec édition
 const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const priorities = ["Haute", "Moyenne", "Basse"];
@@ -342,9 +313,9 @@ const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
         <>
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }} onClick={() => setIsOpen(false)} />
           <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 8, background: COLORS.white, borderRadius: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", border: `1px solid ${COLORS.border}`, zIndex: 999, minWidth: 120 }}>
-            {priorities.map(priority => (
-              <button key={priority} onClick={() => { onPriorityChange(priority); setIsOpen(false); }} style={{ display: "block", width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderRadius: 10 }}>
-                <Badge config={PRIORITY_CONFIG[priority]} />
+            {priorities.map(p => (
+              <button key={p} onClick={() => { onPriorityChange(p); setIsOpen(false); }} style={{ display: "block", width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderRadius: 10 }}>
+                <Badge config={PRIORITY_CONFIG[p]} />
               </button>
             ))}
           </div>
@@ -354,9 +325,6 @@ const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
   );
 });
 
-PrioritySelector.displayName = "PrioritySelector";
-
-// Sélecteur de statut
 const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const statuses = ["En attente", "En cours", "Résolu"];
@@ -370,9 +338,9 @@ const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
         <>
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }} onClick={() => setIsOpen(false)} />
           <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 8, background: COLORS.white, borderRadius: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", border: `1px solid ${COLORS.border}`, zIndex: 999, minWidth: 120 }}>
-            {statuses.map(status => (
-              <button key={status} onClick={() => { onStatusChange(status); setIsOpen(false); }} style={{ display: "block", width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderRadius: 10 }}>
-                <Badge config={STATUS_CONFIG[status]} />
+            {statuses.map(s => (
+              <button key={s} onClick={() => { onStatusChange(s); setIsOpen(false); }} style={{ display: "block", width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", textAlign: "left", borderRadius: 10 }}>
+                <Badge config={STATUS_CONFIG[s]} />
               </button>
             ))}
           </div>
@@ -381,8 +349,6 @@ const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
     </div>
   );
 });
-
-StatusSelector.displayName = "StatusSelector";
 
 // ============================================
 // COMPOSANT PRINCIPAL
@@ -406,67 +372,51 @@ function UnifiedDashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "id", direction: "asc" });
-  const [modalState, setModalState] = useState({
-    isOpen: false,
-    ticket: null,
-    prediction: null,
-    loading: false,
-    error: null,
-  });
+  const [modalState, setModalState] = useState({ isOpen: false, ticket: null, prediction: null, loading: false, error: null });
 
-  // Récupérer le rôle
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
   }, []);
 
-  // Charger tous les tickets (route /tickets/all pour IT, sinon /my)
   const fetchTickets = useCallback(async () => {
     try {
       setLoading(true);
       const isIT = role === "it_consultant" || role === "Consultant IT" || role === "it";
       const url = isIT ? '/tickets/all' : '/tickets/my';
       const response = await API.get(url);
-      const ticketsData = response.data;
-      
-      // Formater les tickets
-      const formatted = ticketsData.map((ticket) => ({
-        id: ticket._id,
-        titre: ticket.titre,
-        utilisateur: ticket.user_id || "Développeur", // Idéalement on pourrait récupérer le nom
-        dateCreation: ticket.dateCreation,
-        priorite: mapPriorityToDisplay(ticket.priorite),
-        scoreConfiance: ticket.scoreConfiance || 0.75,
-        status: ticket.status || "En attente"
+      const data = response.data;
+      const formatted = data.map(t => ({
+        id: t._id,
+        titre: t.titre,
+        utilisateur: t.user_name || "Inconnu",
+        dateCreation: t.dateCreation,
+        priorite: mapPriorityToDisplay(t.priorite),
+        scoreConfiance: t.scoreConfiance || 0.75,
+        status: t.status || "En attente"
       }));
       setTickets(formatted);
-    } catch (error) {
-      console.error("Erreur chargement tickets:", error);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur chargement tickets");
     } finally {
       setLoading(false);
     }
   }, [role]);
 
   useEffect(() => {
-    if (role !== null) {
-      fetchTickets();
-    }
+    if (role !== null) fetchTickets();
   }, [role, fetchTickets]);
 
   const isITConsultant = role === "it_consultant" || role === "Consultant IT" || role === "it";
-  const currentDate = useMemo(() => 
-    new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }), 
-  []);
+  const currentDate = useMemo(() => new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }), []);
 
-  // Statistiques
   const stats = useMemo(() => ({
     total: tickets.length,
     resolved: tickets.filter(t => t.status === "Résolu").length,
     pending: tickets.filter(t => ["En attente", "En cours"].includes(t.status)).length,
-    resolutionRate: tickets.length > 0 ? Math.round((tickets.filter(t => t.status === "Résolu").length / tickets.length) * 100) : 0,
   }), [tickets]);
 
-  // Filtre + tri
   const filteredAndSortedTickets = useMemo(() => {
     let result = [...tickets];
     if (search) {
@@ -486,80 +436,61 @@ function UnifiedDashboard() {
     return result;
   }, [tickets, search, sortConfig]);
 
-  // Handlers
-  const handleLogout = useCallback(() => {
+  const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("user");
     navigate("/");
-  }, [navigate]);
-
-  const handleSettings = useCallback(() => navigate("/settings"), [navigate]);
-
-  const handleSort = useCallback((key) => {
+  };
+  const handleSettings = () => navigate("/settings");
+  const handleSort = (key) => {
     if (key === 'actions') return;
     setSortConfig(prev => ({ key, direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc" }));
-  }, []);
+  };
 
-  // Changement de priorité
-  const handlePriorityChange = useCallback(async (ticketId, newPriorityDisplay) => {
-    const newPriorityAPI = mapDisplayToPriority(newPriorityDisplay);
+  const handlePriorityChange = async (ticketId, newPriorityDisplay) => {
     try {
-      await API.patch(`/tickets/${ticketId}/priority`, { priority: newPriorityAPI });
+      await API.patch(`/tickets/${ticketId}/priority`, { priority: mapDisplayToPriority(newPriorityDisplay) });
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, priorite: newPriorityDisplay } : t));
-    } catch (err) {
-      console.error("Erreur mise à jour priorité:", err);
-      alert("Impossible de modifier la priorité");
-    }
-  }, []);
+    } catch (err) { alert("Erreur mise à jour priorité"); }
+  };
 
-  // Changement de statut
-  const handleStatusChange = useCallback(async (ticketId, newStatus) => {
+  const handleStatusChange = async (ticketId, newStatus) => {
     try {
       await API.put(`/tickets/${ticketId}`, { status: newStatus });
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
-    } catch (err) {
-      console.error("Erreur mise à jour statut:", err);
-      alert("Impossible de modifier le statut");
-    }
-  }, []);
+    } catch (err) { alert("Erreur mise à jour statut"); }
+  };
 
-  // Suppression d'un ticket
-  const handleDeleteTicket = useCallback(async (ticketId) => {
+  const handleDelete = async (ticketId) => {
     if (!window.confirm("Supprimer définitivement ce ticket ?")) return;
     try {
       await API.delete(`/tickets/${ticketId}`);
       setTickets(prev => prev.filter(t => t.id !== ticketId));
-    } catch (err) {
-      console.error("Erreur suppression:", err);
-      alert("Impossible de supprimer le ticket");
-    }
-  }, []);
+    } catch (err) { alert("Erreur suppression"); }
+  };
 
-  // Analyse IA
-  const analyzeTicket = useCallback(async (ticket) => {
+  const analyzeTicket = async (ticket) => {
     setModalState({ isOpen: true, ticket, prediction: null, loading: true, error: null });
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
+      const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: ticket.titre }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
-      if (!response.ok) throw new Error(`Erreur API: ${response.status}`);
-      const data = await response.json();
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      const data = await res.json();
       setModalState(prev => ({ ...prev, prediction: data, loading: false }));
     } catch (err) {
       setModalState(prev => ({ ...prev, error: err.message, loading: false }));
     }
-  }, []);
+  };
 
-  const closeModal = useCallback(() => {
-    setModalState({ isOpen: false, ticket: null, prediction: null, loading: false, error: null });
-  }, []);
+  const closeModal = () => setModalState({ isOpen: false, ticket: null, prediction: null, loading: false, error: null });
 
   if (loading) {
     return (
@@ -619,7 +550,7 @@ function UnifiedDashboard() {
                         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, background: COLORS.primaryLight, color: COLORS.primary, borderRadius: 6, fontWeight: 700, fontSize: 12 }}>
                           {typeof ticket.id === 'string' ? ticket.id.slice(-4) : ticket.id}
                         </span>
-                      </td>
+                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, fontWeight: 500, color: COLORS.dark }}>{ticket.titre}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -629,18 +560,18 @@ function UnifiedDashboard() {
                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.gray }}>{formatDate(ticket.dateCreation)}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
-                        <PrioritySelector currentPriority={ticket.priorite} onPriorityChange={(newPrio) => handlePriorityChange(ticket.id, newPrio)} />
+                        <PrioritySelector currentPriority={ticket.priorite} onPriorityChange={(p) => handlePriorityChange(ticket.id, p)} />
                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, minWidth: 130 }}><ScoreBar score={ticket.scoreConfiance} /></td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
-                        <StatusSelector currentStatus={ticket.status} onStatusChange={(newStatus) => handleStatusChange(ticket.id, newStatus)} />
+                        <StatusSelector currentStatus={ticket.status} onStatusChange={(s) => handleStatusChange(ticket.id, s)} />
                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <div style={{ display: "flex", gap: 8 }}>
                           <button onClick={() => analyzeTicket(ticket)} style={{ ...styles.button.primary, padding: "6px 12px", borderRadius: 8, fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}>
                             <Icons.AI /> Analyser
                           </button>
-                          <button onClick={() => handleDeleteTicket(ticket.id)} style={{ background: COLORS.errorLight, border: "none", borderRadius: 8, padding: "6px 10px", cursor: "pointer", color: COLORS.error }}>
+                          <button onClick={() => handleDelete(ticket.id)} style={{ background: COLORS.errorLight, border: "none", borderRadius: 8, padding: "6px 10px", cursor: "pointer", color: COLORS.error }}>
                             <Icons.Trash />
                           </button>
                         </div>
@@ -658,7 +589,6 @@ function UnifiedDashboard() {
           </div>
         </div>
 
-        {/* Modal d'analyse IA */}
         {modalState.isOpen && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
             <div style={{ background: COLORS.white, borderRadius: 18, padding: 28, maxWidth: 450, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
@@ -694,4 +624,5 @@ function UnifiedDashboard() {
     </div>
   );
 }
+
 export default React.memo(UnifiedDashboard);
