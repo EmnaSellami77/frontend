@@ -73,7 +73,7 @@ const mapDisplayToPriority = (display) => {
 };
 
 // ============================================
-// ICONS COMPONENTS
+// ICONS COMPONENTS (inchangés)
 // ============================================
 
 const IconWrapper = React.memo(({ children, size = 20, color = "currentColor" }) => (
@@ -153,7 +153,7 @@ const Icons = {
 };
 
 // ============================================
-// STYLES
+// STYLES (inchangés)
 // ============================================
 
 const styles = {
@@ -215,7 +215,7 @@ const styles = {
 };
 
 // ============================================
-// COMPOSANTS RÉUTILISABLES
+// COMPOSANTS RÉUTILISABLES (Badge, ScoreBar, StatCard, Header, PrioritySelector, StatusSelector)
 // ============================================
 
 const Badge = React.memo(({ config, label }) => {
@@ -360,14 +360,14 @@ const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
 // COMPOSANT PRINCIPAL
 // ============================================
 
+// Colonnes : une seule colonne Priorité (modifiable)
 const COLUMNS = [
   { key: "id", label: "#", sortable: true },
   { key: "type", label: "Type de problème", sortable: true },
   { key: "description", label: "Description", sortable: false },
   { key: "utilisateur", label: "Créé par", sortable: true },
   { key: "dateCreation", label: "Date", sortable: true },
-  { key: "prioriteIA", label: "Priorité IA", sortable: true },
-  { key: "priorite", label: "Priorité actuelle", sortable: true },
+  { key: "priorite", label: "Priorité", sortable: true },
   { key: "scoreConfiance", label: "Score IA", sortable: true },
   { key: "status", label: "Statut", sortable: true },
   { key: "actions", label: "Actions", sortable: false },
@@ -379,7 +379,8 @@ function UnifiedDashboard() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: "id", direction: "asc" });
+  // Tri initial par priorité décroissante (Haute en premier)
+  const [sortConfig, setSortConfig] = useState({ key: "priorite", direction: "desc" });
   const [modalState, setModalState] = useState({ isOpen: false, ticket: null, prediction: null, loading: false, error: null });
 
   useEffect(() => {
@@ -400,8 +401,7 @@ function UnifiedDashboard() {
         description: t.description || t.titre || "Aucune description",
         utilisateur: t.user_name || t.user_email || "Inconnu",
         dateCreation: t.dateCreation || new Date().toISOString(),
-        prioriteIA: mapPriorityToDisplay(t.priorite_predite || t.priorite),
-        priorite: mapPriorityToDisplay(t.priorite),
+        priorite: mapPriorityToDisplay(t.priorite_predite || t.priorite),
         scoreConfiance: t.scoreConfiance !== undefined ? t.scoreConfiance : 0.75,
         status: t.status || "En attente"
       }));
@@ -436,6 +436,7 @@ function UnifiedDashboard() {
     pending: tickets.filter(t => ["En attente", "En cours"].includes(t.status)).length,
   }), [tickets]);
 
+  // Filtrage et tri avec ordre personnalisé pour la priorité
   const filteredAndSortedTickets = useMemo(() => {
     let result = [...tickets];
     if (search) {
@@ -451,11 +452,18 @@ function UnifiedDashboard() {
       result.sort((a, b) => {
         let aVal = a[key];
         let bVal = b[key];
-        if (aVal === undefined || aVal === null) aVal = '';
-        if (bVal === undefined || bVal === null) bVal = '';
-        if (typeof aVal === "string") {
-          aVal = aVal.toLowerCase();
-          bVal = bVal.toLowerCase();
+        // Gestion spéciale pour la priorité (ordre Haute > Moyenne > Basse)
+        if (key === 'priorite') {
+          const order = { 'Haute': 3, 'Moyenne': 2, 'Basse': 1 };
+          aVal = order[aVal] || 0;
+          bVal = order[bVal] || 0;
+        } else {
+          if (aVal === undefined || aVal === null) aVal = '';
+          if (bVal === undefined || bVal === null) bVal = '';
+          if (typeof aVal === "string") {
+            aVal = aVal.toLowerCase();
+            bVal = bVal.toLowerCase();
+          }
         }
         if (aVal < bVal) return direction === "asc" ? -1 : 1;
         if (aVal > bVal) return direction === "asc" ? 1 : -1;
@@ -581,7 +589,7 @@ function UnifiedDashboard() {
               <tbody>
                 {filteredAndSortedTickets.length === 0 ? (
                   <tr>
-                    <td colSpan={10} style={{ padding: "48px 0", textAlign: "center", color: COLORS.lightGray }}>Aucun ticket trouvé</td>
+                    <td colSpan={9} style={{ padding: "48px 0", textAlign: "center", color: COLORS.lightGray }}>Aucun ticket trouvé</td>
                   </tr>
                 ) : (
                   filteredAndSortedTickets.map((ticket, idx) => (
@@ -600,9 +608,6 @@ function UnifiedDashboard() {
                         </div>
                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.gray }}>{formatDate(ticket.dateCreation)}</td>
-                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
-                        <Badge config={PRIORITY_CONFIG[ticket.prioriteIA] || PRIORITY_CONFIG["Moyenne"]} />
-                      </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <PrioritySelector currentPriority={ticket.priorite} onPriorityChange={(p) => handlePriorityChange(ticket.id, p)} />
                       </td>

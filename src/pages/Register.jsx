@@ -426,7 +426,7 @@ export default function Register() {
           <div style={styles.termsContainer}>
             <input type="checkbox" id="terms" style={styles.checkbox} disabled={loading} />
             <label htmlFor="terms" style={styles.termsLabel}>
-              J'accepte les <a href="/terms" style={styles.termsLink}>conditions d'utilisation</a>
+              <Link to="/terms" style={styles.termsLink}>conditions d'utilisation</Link>
             </label>
           </div>
 

@@ -10,51 +10,83 @@ export default function DeveloperSettings() {
     email: "",
     currentPassword: "",
     newPassword: "",
-    confirmPassword: "",
-    notifications: true
+    confirmPassword: ""
+  });
+
+  const [originalData, setOriginalData] = useState({
+    username: "",
+    email: ""
   });
 
   const [activeTab, setActiveTab] = useState("profile");
   const [successMessage, setSuccessMessage] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [userId, setUserId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Charger les infos utilisateur depuis le backend
   useEffect(() => {
     const userStr = localStorage.getItem("user");
-    if (userStr) {
+    if (!userStr) {
+      navigate("/developer/login");
+      return;
+    }
+    try {
       const user = JSON.parse(userStr);
+      if (!user._id) {
+        navigate("/developer/login");
+        return;
+      }
       setUserId(user._id);
+      const username = user.name || "";
+      const email = user.email || "";
       setFormData(prev => ({
         ...prev,
-        username: user.name || "",
-        email: user.email || "",
-        notifications: user.notifications !== undefined ? user.notifications : true
+        username,
+        email
       }));
+      setOriginalData({ username, email });
+    } catch (error) {
+      console.error(error);
+      navigate("/developer/login");
     }
-  }, []);
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleNotificationsToggle = () => {
-    setFormData(prev => ({ ...prev, notifications: !prev.notifications }));
+    if (errorMessage) setErrorMessage("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!userId) {
+      setErrorMessage("Session expirée, veuillez vous reconnecter.");
+      setTimeout(() => navigate("/developer/login"), 1500);
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage("");
+    
     try {
-      // Mettre à jour le profil (nom, email, notifications)
+      // Mettre à jour le profil
       await API.put(`/user/${userId}`, {
         name: formData.username,
-        email: formData.email,
-        notifications: formData.notifications
+        email: formData.email
       });
 
-      // Si un nouveau mot de passe est fourni
-      if (formData.newPassword && formData.newPassword === formData.confirmPassword) {
+      // Changer le mot de passe si fourni
+      if (formData.newPassword) {
+        if (formData.newPassword !== formData.confirmPassword) {
+          setErrorMessage("Les mots de passe ne correspondent pas");
+          setLoading(false);
+          return;
+        }
+        if (formData.newPassword.length < 6) {
+          setErrorMessage("Le mot de passe doit contenir au moins 6 caractères");
+          setLoading(false);
+          return;
+        }
         await API.put(`/user/${userId}`, {
           password: formData.newPassword
         });
@@ -62,12 +94,21 @@ export default function DeveloperSettings() {
 
       setSuccessMessage("Modifications enregistrées avec succès !");
       setTimeout(() => setSuccessMessage(""), 3000);
-      setIsEditing(false);
-
+      
       // Mettre à jour localStorage
-      const updatedUser = { ...JSON.parse(localStorage.getItem("user")), name: formData.username, email: formData.email };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        userData.name = formData.username;
+        userData.email = formData.email;
+        localStorage.setItem("user", JSON.stringify(userData));
+      }
+      
+      setOriginalData({
+        username: formData.username,
+        email: formData.email
+      });
+      
       setFormData(prev => ({
         ...prev,
         currentPassword: "",
@@ -76,19 +117,39 @@ export default function DeveloperSettings() {
       }));
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de l'enregistrement");
+      setErrorMessage(err.response?.data?.error || "Erreur lors de l'enregistrement");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleCancel = () => {
+    setFormData(prev => ({
+      ...prev,
+      username: originalData.username,
+      email: originalData.email,
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: ""
+    }));
+  };
+
   const handleDeleteAccount = async () => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) {
-      try {
-        await API.delete(`/user/${userId}`);
-        localStorage.clear();
-        navigate("/");
-      } catch (err) {
-        alert("Erreur lors de la suppression");
-      }
+    if (!userId) {
+      setErrorMessage("Session expirée");
+      return;
+    }
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) return;
+    setLoading(true);
+    try {
+      await API.delete(`/user/${userId}`);
+      localStorage.clear();
+      navigate("/");
+    } catch (err) {
+      setErrorMessage(err.response?.data?.error || "Erreur lors de la suppression");
+      setTimeout(() => setErrorMessage(""), 3000);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,7 +162,7 @@ export default function DeveloperSettings() {
     navigate("/developer/dashboard");
   };
 
-  // Styles (inchangés visuellement)
+  // Styles (inchangés, sans la section notifications)
   const styles = {
     page: {
       backgroundColor: "#f9fafb",
@@ -198,6 +259,17 @@ export default function DeveloperSettings() {
       height: "20px",
       stroke: "currentColor",
     },
+    errorMessage: {
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      padding: "16px 20px",
+      backgroundColor: "#fef2f2",
+      border: "1px solid #fee2e2",
+      borderRadius: "12px",
+      color: "#dc2626",
+      marginBottom: "20px",
+    },
     tabsContainer: {
       display: "flex",
       gap: "8px",
@@ -247,66 +319,6 @@ export default function DeveloperSettings() {
       boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
       border: "1px solid #e5e7eb",
     },
-    notificationsSection: {
-      marginBottom: "30px",
-      padding: "20px",
-      backgroundColor: "#f8fafc",
-      borderRadius: "16px",
-      border: "1px solid #e2e8f0",
-    },
-    notificationsHeader: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: "10px",
-    },
-    notificationsInfo: {
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-    },
-    notificationsIcon: {
-      width: "24px",
-      height: "24px",
-      color: "#3b82f6",
-      stroke: "currentColor",
-    },
-    notificationsTitle: {
-      fontSize: "1.1rem",
-      color: "#1e293b",
-    },
-    notificationsDescription: {
-      margin: "4px 0 0",
-      fontSize: "0.9rem",
-      color: "#64748b",
-    },
-    notificationsToggle: {
-      width: "56px",
-      height: "30px",
-      backgroundColor: formData.notifications ? '#3b82f6' : '#e2e8f0',
-      border: "none",
-      borderRadius: "30px",
-      display: "flex",
-      alignItems: "center",
-      padding: "3px",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-      justifyContent: formData.notifications ? 'flex-end' : 'flex-start',
-    },
-    toggleCircle: {
-      width: "24px",
-      height: "24px",
-      backgroundColor: "#ffffff",
-      borderRadius: "50%",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-      transition: "all 0.3s ease",
-    },
-    notificationsStatus: {
-      margin: "10px 0 0",
-      fontSize: "0.9rem",
-      color: "#475569",
-      fontWeight: "500",
-    },
     cardHeader: {
       display: "flex",
       alignItems: "center",
@@ -325,25 +337,6 @@ export default function DeveloperSettings() {
       fontWeight: "600",
       color: "#1e293b",
       flex: 1,
-    },
-    editButton: {
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
-      padding: "8px 16px",
-      backgroundColor: "#f3f4f6",
-      border: "1px solid #e5e7eb",
-      borderRadius: "8px",
-      color: "#3b82f6",
-      fontSize: "0.9rem",
-      fontWeight: "500",
-      cursor: "pointer",
-      transition: "all 0.2s ease",
-    },
-    editIcon: {
-      width: "16px",
-      height: "16px",
-      stroke: "currentColor",
     },
     avatarSection: {
       display: "flex",
@@ -452,13 +445,15 @@ export default function DeveloperSettings() {
       marginTop: "30px",
       paddingTop: "20px",
       borderTop: "1px solid #e5e7eb",
+      display: "flex",
+      gap: "12px",
     },
     saveButton: {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       gap: "8px",
-      width: "100%",
+      flex: 1,
       padding: "14px",
       background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
       border: "none",
@@ -468,15 +463,13 @@ export default function DeveloperSettings() {
       fontWeight: "600",
       cursor: "pointer",
       boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)",
-      marginBottom: "10px",
-    },
-    saveIcon: {
-      width: "18px",
-      height: "18px",
-      stroke: "currentColor",
     },
     cancelButton: {
-      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "8px",
+      flex: 1,
       padding: "14px",
       backgroundColor: "#ffffff",
       border: "1px solid #e5e7eb",
@@ -486,16 +479,13 @@ export default function DeveloperSettings() {
       fontWeight: "500",
       cursor: "pointer",
     },
-    viewModeText: {
-      margin: 0,
-      textAlign: "center",
-      color: "#64748b",
-      fontSize: "0.95rem",
-      fontStyle: "italic",
+    saveIcon: {
+      width: "18px",
+      height: "18px",
+      stroke: "currentColor",
     },
   };
 
-  // Rendu JSX (identique à l'original, mais avec les handlers connectés)
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -536,6 +526,12 @@ export default function DeveloperSettings() {
         </div>
       )}
 
+      {errorMessage && (
+        <div style={styles.errorMessage}>
+          <span>❌</span> {errorMessage}
+        </div>
+      )}
+
       <div style={styles.tabsContainer}>
         <button
           onClick={() => setActiveTab("profile")}
@@ -561,33 +557,6 @@ export default function DeveloperSettings() {
 
       <div style={styles.container}>
         <form onSubmit={handleSubmit} style={styles.formCard}>
-          <div style={styles.notificationsSection}>
-            <div style={styles.notificationsHeader}>
-              <div style={styles.notificationsInfo}>
-                <svg style={styles.notificationsIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                <div>
-                  <strong style={styles.notificationsTitle}>Notifications</strong>
-                  <p style={styles.notificationsDescription}>
-                    Activer ou désactiver toutes les notifications
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleNotificationsToggle}
-                style={styles.notificationsToggle}
-              >
-                <span style={styles.toggleCircle} />
-              </button>
-            </div>
-            <p style={styles.notificationsStatus}>
-              {formData.notifications ? '✅ Notifications activées' : '🔕 Notifications désactivées'}
-            </p>
-          </div>
-
           {activeTab === "profile" && (
             <div>
               <div style={styles.cardHeader}>
@@ -596,29 +565,19 @@ export default function DeveloperSettings() {
                   <circle cx="12" cy="7" r="4" />
                 </svg>
                 <h3 style={styles.cardTitle}>Informations du profil</h3>
-                {!isEditing && (
-                  <button type="button" onClick={() => setIsEditing(true)} style={styles.editButton}>
-                    <svg style={styles.editIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                    </svg>
-                    Modifier
-                  </button>
-                )}
               </div>
 
               <div style={styles.avatarSection}>
                 <div style={styles.avatar}>
                   <span style={styles.avatarText}>{formData.username.charAt(0).toUpperCase()}</span>
                 </div>
-                {isEditing && (
-                  <button type="button" style={styles.avatarButton}>
-                    <svg style={styles.avatarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                      <circle cx="12" cy="13" r="4" />
-                    </svg>
-                    Changer la photo
-                  </button>
-                )}
+                <button type="button" style={styles.avatarButton} disabled>
+                  <svg style={styles.avatarIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                  Changer la photo
+                </button>
               </div>
 
               <div style={styles.formGroup}>
@@ -635,7 +594,7 @@ export default function DeveloperSettings() {
                   value={formData.username}
                   onChange={handleChange}
                   style={styles.input}
-                  disabled={!isEditing}
+                  disabled={loading}
                 />
               </div>
 
@@ -653,26 +612,24 @@ export default function DeveloperSettings() {
                   value={formData.email}
                   onChange={handleChange}
                   style={styles.input}
-                  disabled={!isEditing}
+                  disabled={loading}
                 />
               </div>
 
-              {isEditing && (
-                <div style={styles.deleteSection}>
-                  <button type="button" onClick={handleDeleteAccount} style={styles.deleteButton}>
-                    <svg style={styles.deleteIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                    Supprimer mon compte
-                  </button>
-                  <p style={styles.deleteWarning}>
-                    Cette action est irréversible. Toutes vos données seront supprimées.
-                  </p>
-                </div>
-              )}
+              <div style={styles.deleteSection}>
+                <button type="button" onClick={handleDeleteAccount} style={styles.deleteButton} disabled={loading}>
+                  <svg style={styles.deleteIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
+                  Supprimer mon compte
+                </button>
+                <p style={styles.deleteWarning}>
+                  Cette action est irréversible. Toutes vos données seront supprimées.
+                </p>
+              </div>
             </div>
           )}
 
@@ -700,7 +657,8 @@ export default function DeveloperSettings() {
                   value={formData.currentPassword}
                   onChange={handleChange}
                   style={styles.input}
-                  placeholder="••••••••"
+                  placeholder="Optionnel"
+                  disabled={loading}
                 />
               </div>
 
@@ -712,7 +670,8 @@ export default function DeveloperSettings() {
                   value={formData.newPassword}
                   onChange={handleChange}
                   style={styles.input}
-                  placeholder="Minimum 8 caractères"
+                  placeholder="Minimum 6 caractères"
+                  disabled={loading}
                 />
               </div>
 
@@ -725,31 +684,24 @@ export default function DeveloperSettings() {
                   onChange={handleChange}
                   style={styles.input}
                   placeholder="Confirmez votre mot de passe"
+                  disabled={loading}
                 />
               </div>
             </div>
           )}
 
           <div style={styles.formActions}>
-            {isEditing ? (
-              <>
-                <button type="submit" style={styles.saveButton}>
-                  <svg style={styles.saveIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                    <polyline points="17 21 17 13 7 13 7 21" />
-                    <polyline points="7 3 7 8 15 8" />
-                  </svg>
-                  Enregistrer
-                </button>
-                <button type="button" onClick={() => setIsEditing(false)} style={styles.cancelButton}>
-                  Annuler
-                </button>
-              </>
-            ) : (
-              <p style={styles.viewModeText}>
-                Cliquez sur "Modifier" pour changer vos informations
-              </p>
-            )}
+            <button type="submit" style={styles.saveButton} disabled={loading}>
+              <svg style={styles.saveIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              {loading ? "Enregistrement..." : "Enregistrer"}
+            </button>
+            <button type="button" onClick={handleCancel} style={styles.cancelButton} disabled={loading}>
+              Annuler
+            </button>
           </div>
         </form>
       </div>

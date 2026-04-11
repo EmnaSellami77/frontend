@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 
 const EyeIcon = ({ open }) => (
@@ -43,6 +44,7 @@ const ShieldIcon = () => (
 );
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("profile");
   const [saved, setSaved] = useState(false);
   const [pwdSaved, setPwdSaved] = useState(false);
@@ -67,33 +69,36 @@ export default function Settings() {
 
   const [show, setShow] = useState({ current: false, new: false, confirm: false });
 
-  // Charger les données utilisateur au démarrage
   useEffect(() => {
     const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const userData = JSON.parse(userStr);
-        setUserId(userData._id);
-        
-        // Séparer le nom complet en nom et prénom
-        const fullName = userData.name || "";
-        const nameParts = fullName.split(" ");
-        const prenom = nameParts[0] || "";
-        const nom = nameParts.slice(1).join(" ") || "";
-        
-        setUser({
-          nom: nom,
-          prenom: prenom,
-          email: userData.email || "",
-          role: "IT Consultant",
-          phone: userData.phone || "",
-          location: userData.location || "",
-        });
-      } catch (error) {
-        console.error("Erreur lors du chargement de l'utilisateur:", error);
-      }
+    if (!userStr) {
+      navigate("/login");
+      return;
     }
-  }, []);
+    try {
+      const userData = JSON.parse(userStr);
+      if (!userData._id) {
+        navigate("/login");
+        return;
+      }
+      setUserId(userData._id);
+      const fullName = userData.name || "";
+      const nameParts = fullName.split(" ");
+      const prenom = nameParts[0] || "";
+      const nom = nameParts.slice(1).join(" ") || "";
+      setUser({
+        nom: nom,
+        prenom: prenom,
+        email: userData.email || "",
+        role: "IT Consultant",
+        phone: userData.phone || "",
+        location: userData.location || "",
+      });
+    } catch (error) {
+      console.error(error);
+      navigate("/login");
+    }
+  }, [navigate]);
 
   const calculateStrength = (pw) => {
     let s = 0;
@@ -113,20 +118,21 @@ export default function Settings() {
   ];
 
   const handleSaveProfile = async () => {
+    if (!userId) {
+      setError("Session expirée, veuillez vous reconnecter.");
+      setTimeout(() => navigate("/login"), 1500);
+      return;
+    }
     setLoading(true);
     setError("");
-    
     try {
       const fullName = `${user.prenom} ${user.nom}`.trim();
-      
       await API.put(`/user/${userId}`, {
         name: fullName,
         email: user.email,
         phone: user.phone,
         location: user.location
       });
-      
-      // Mettre à jour localStorage
       const userStr = localStorage.getItem('user');
       if (userStr) {
         const userData = JSON.parse(userStr);
@@ -136,7 +142,6 @@ export default function Settings() {
         userData.location = user.location;
         localStorage.setItem('user', JSON.stringify(userData));
       }
-      
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
@@ -148,28 +153,32 @@ export default function Settings() {
   };
 
   const handlePasswordUpdate = async () => {
+    if (!userId) {
+      setError("Session expirée, veuillez vous reconnecter.");
+      setTimeout(() => navigate("/login"), 1500);
+      return;
+    }
     if (passwords.newPassword !== passwords.confirmPassword) {
       setError("Les mots de passe ne correspondent pas");
       setTimeout(() => setError(""), 3000);
       return;
     }
-    
     if (passwords.newPassword && passwords.newPassword.length < 6) {
       setError("Le mot de passe doit contenir au moins 6 caractères");
       setTimeout(() => setError(""), 3000);
       return;
     }
-    
+    if (!passwords.currentPassword) {
+      setError("Veuillez entrer votre mot de passe actuel");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
     setLoading(true);
     setError("");
-    
     try {
-      await API.post("/user/change-password", {
-        userId: userId,
-        currentPassword: passwords.currentPassword,
-        newPassword: passwords.newPassword
+      await API.put(`/user/${userId}`, {
+        password: passwords.newPassword
       });
-      
       setPwdSaved(true);
       setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setTimeout(() => setPwdSaved(false), 2500);
@@ -181,8 +190,26 @@ export default function Settings() {
     }
   };
 
-  const initials = `${(user.prenom?.[0] || "U")}${(user.nom?.[0] || "S")}`.toUpperCase();
+  const handleDeleteAccount = async () => {
+    if (!userId) {
+      setError("Session expirée");
+      return;
+    }
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) return;
+    setLoading(true);
+    try {
+      await API.delete(`/user/${userId}`);
+      localStorage.clear();
+      navigate("/");
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur lors de la suppression du compte");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const initials = `${(user.prenom?.[0] || "U")}${(user.nom?.[0] || "S")}`.toUpperCase();
   const tabs = [
     { id: "profile", label: "Profil", icon: <UserIcon /> },
     { id: "security", label: "Sécurité", icon: <LockIcon /> },
@@ -199,8 +226,6 @@ export default function Settings() {
       padding: "40px 16px",
     }}>
       <div style={{ width: "100%", maxWidth: 720 }}>
-
-        {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 26, fontWeight: 700, color: "#0f172a", margin: 0, letterSpacing: "-0.5px" }}>
             Paramètres du compte
@@ -210,7 +235,6 @@ export default function Settings() {
           </p>
         </div>
 
-        {/* Message d'erreur */}
         {error && (
           <div style={{
             background: "#fef2f2",
@@ -227,7 +251,6 @@ export default function Settings() {
           </div>
         )}
 
-        {/* Profile Card */}
         <div style={{
           background: "#fff",
           borderRadius: 20,
@@ -263,7 +286,6 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Tabs */}
         <div style={{
           display: "flex", gap: 4, background: "#f1f5f9",
           padding: 4, borderRadius: 12, marginBottom: 20,
@@ -287,14 +309,11 @@ export default function Settings() {
           ))}
         </div>
 
-        {/* Main Card */}
         <div style={{
           background: "#fff", borderRadius: 20,
           boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.04)",
           overflow: "hidden",
         }}>
-
-          {/* ===== PROFILE TAB ===== */}
           {activeTab === "profile" && (
             <div style={{ padding: "32px 32px" }}>
               <div style={{ marginBottom: 28 }}>
@@ -336,8 +355,6 @@ export default function Settings() {
                     />
                   </div>
                 ))}
-
-                {/* Role (disabled) */}
                 <div>
                   <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 7 }}>
                     Rôle
@@ -356,7 +373,7 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                 <button
                   onClick={handleSaveProfile}
                   style={{
@@ -380,11 +397,22 @@ export default function Settings() {
                     <CheckIcon /> Modifications enregistrées
                   </div>
                 )}
+                <button
+                  onClick={handleDeleteAccount}
+                  style={{
+                    padding: "11px 28px", background: "#ef4444",
+                    color: "#fff", border: "none", borderRadius: 10,
+                    fontWeight: 600, fontSize: 14, cursor: "pointer",
+                    marginLeft: "auto",
+                  }}
+                  disabled={loading}
+                >
+                  Supprimer mon compte
+                </button>
               </div>
             </div>
           )}
 
-          {/* ===== SECURITY TAB ===== */}
           {activeTab === "security" && (
             <div style={{ padding: "32px 32px" }}>
               <div style={{ marginBottom: 28 }}>
@@ -405,7 +433,6 @@ export default function Settings() {
                   const isConfirm = name === "confirmPassword";
                   const isNew = name === "newPassword";
                   const match = passwords.confirmPassword === passwords.newPassword && passwords.confirmPassword !== "";
-
                   return (
                     <div key={name}>
                       <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 7 }}>
@@ -440,26 +467,22 @@ export default function Settings() {
                           <EyeIcon open={show[showKey]} />
                         </button>
                       </div>
-
-                      {/* Strength bar */}
                       {isNew && passwords.newPassword && (
                         <div style={{ marginTop: 10 }}>
                           <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
-                            {[1, 2, 3, 4].map(i => (
+                            {[1,2,3,4].map(i => (
                               <div key={i} style={{
                                 flex: 1, height: 4, borderRadius: 4,
-                                background: i <= strength ? (strengthMeta[strength - 1]?.color || "#e2e8f0") : "#e2e8f0",
+                                background: i <= strength ? (strengthMeta[strength-1]?.color || "#e2e8f0") : "#e2e8f0",
                                 transition: "background 0.3s",
                               }} />
                             ))}
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: strengthMeta[strength - 1]?.color || "#94a3b8" }}>
-                            {strengthMeta[strength - 1]?.label || "Très faible"}
+                          <span style={{ fontSize: 12, fontWeight: 600, color: strengthMeta[strength-1]?.color || "#94a3b8" }}>
+                            {strengthMeta[strength-1]?.label || "Très faible"}
                           </span>
                         </div>
                       )}
-
-                      {/* Match message */}
                       {isConfirm && passwords.confirmPassword && (
                         <div style={{
                           marginTop: 7, fontSize: 12, fontWeight: 600,
@@ -477,12 +500,7 @@ export default function Settings() {
               <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 14 }}>
                 <button
                   onClick={handlePasswordUpdate}
-                  disabled={
-                    loading ||
-                    !passwords.currentPassword ||
-                    !passwords.newPassword ||
-                    passwords.newPassword !== passwords.confirmPassword
-                  }
+                  disabled={loading || !passwords.currentPassword || !passwords.newPassword || passwords.newPassword !== passwords.confirmPassword}
                   style={{
                     padding: "11px 28px",
                     background: passwords.currentPassword && passwords.newPassword && passwords.newPassword === passwords.confirmPassword
@@ -506,16 +524,12 @@ export default function Settings() {
           )}
         </div>
       </div>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(5px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
-
-// Ajout de l'animation
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-`;
-document.head.appendChild(style);

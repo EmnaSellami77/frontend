@@ -27,12 +27,9 @@ function ForgotPassword() {
     setMessage("");
 
     try {
-      // Appel API pour envoyer l'email de réinitialisation
       const response = await API.post("/user/forgot-password", { email });
-      
       setMessage(response.data.message || "Lien de réinitialisation envoyé !");
-      
-      // Redirection après 2 secondes
+
       setTimeout(() => {
         if (role === "developer") {
           navigate("/developer/login");
@@ -40,7 +37,6 @@ function ForgotPassword() {
           navigate("/login");
         }
       }, 2000);
-      
     } catch (err) {
       const errorMessage = err.response?.data?.error || "Erreur lors de l'envoi de l'email";
       setError(errorMessage);
