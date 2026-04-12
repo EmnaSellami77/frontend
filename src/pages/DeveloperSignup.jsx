@@ -55,7 +55,8 @@ export default function DeveloperSignup() {
     setLoading(true);
     try {
       const response = await API.post('/auth/google', {
-        id_token: id_token
+        id_token: id_token,
+        role: "developer"  // ⭐ Ajout du rôle
       });
       
       const data = response.data;

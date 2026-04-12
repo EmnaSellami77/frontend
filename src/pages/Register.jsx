@@ -61,14 +61,15 @@ export default function Register() {
     }
   };
 
-  // ⭐ Inscription avec Google
+  // ⭐ Inscription avec Google (IT Consultant)
   const handleGoogleSuccess = async (credentialResponse) => {
     const id_token = credentialResponse.credential;
     
     setLoading(true);
     try {
       const response = await API.post('/auth/google', {
-        id_token: id_token
+        id_token: id_token,
+        role: "it_consultant"  // ⭐ Ajout du rôle
       });
       
       const data = response.data;
