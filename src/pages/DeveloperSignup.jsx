@@ -10,11 +10,13 @@ export default function DeveloperSignup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError("");
+    if (successMessage) setSuccessMessage("");
   };
 
   const handleSubmit = async (e) => {
@@ -33,40 +35,37 @@ export default function DeveloperSignup() {
       return;
     }
     setLoading(true);
+    setError("");
+    setSuccessMessage("");
     try {
-      await API.post('/auth/signup', {
-        name: form.fullName,
-        email: form.email,
-        password: form.password,
-        role: 'developer'
-      });
-      navigate("/developer/login");
-    } catch (err) {
-      setError(err.response?.data?.error || "Erreur d'inscription");
-    } finally {
-      setLoading(false);
-    }
+  const response = await API.post("/auth/signup", {
+    name: form.fullName,
+    email: form.email,
+    password: form.password,
+    role: "it_consultant"  // ou "developer"
+  });
+  setSuccessMessage(response.data.message || "Inscription réussie ! Un code de vérification a été envoyé.");
+  // Redirection vers la page de vérification
+  setTimeout(() => navigate("/verify-email"), 3000);
+} catch (err) {
+  setError(err.response?.data?.error || "Erreur lors de l'inscription");
+}
   };
 
-  // ⭐ Inscription développeur avec Google
+  // Inscription développeur avec Google
   const handleGoogleSuccess = async (credentialResponse) => {
     const id_token = credentialResponse.credential;
-    
     setLoading(true);
+    setError("");
+    setSuccessMessage("");
     try {
-      const response = await API.post('/auth/google', {
-        id_token: id_token
-      });
-      
+      const response = await API.post('/auth/google', { id_token });
       const data = response.data;
-      
       if (data.success) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         const role = data.user.role || 'developer';
         localStorage.setItem('role', role);
-        
-        // Redirection vers dashboard développeur
         navigate("/developer/dashboard");
       } else {
         setError(data.error || "Erreur d'inscription avec Google");
@@ -160,6 +159,20 @@ export default function DeveloperSignup() {
       color: "#ef4444",
       fontSize: "0.9rem",
       marginBottom: "20px",
+    },
+    successMessage: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: "8px",
+      padding: "12px 16px",
+      backgroundColor: "#d1fae5",
+      border: "1px solid #a7f3d0",
+      borderRadius: "12px",
+      color: "#065f46",
+      fontSize: "0.9rem",
+      marginBottom: "20px",
+      textAlign: "center",
     },
     form: {
       display: "flex",
@@ -277,29 +290,10 @@ export default function DeveloperSignup() {
       zIndex: 2,
     },
     socialContainer: {
-      display: "grid",
-      gridTemplateColumns: "1fr",
+      display: "flex",
+      justifyContent: "center",
       gap: "12px",
       marginTop: "10px",
-    },
-    socialButton: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "8px",
-      padding: "10px",
-      backgroundColor: "#ffffff",
-      border: "1px solid #e2e8f0",
-      borderRadius: "10px",
-      color: "#1e293b",
-      fontSize: "0.9rem",
-      fontWeight: "500",
-      cursor: "pointer",
-      transition: "all 0.2s ease",
-    },
-    socialIcon: {
-      width: "18px",
-      height: "18px",
     },
   };
 
@@ -331,6 +325,19 @@ export default function DeveloperSignup() {
               <circle cx="12" cy="16" r="1" fill="currentColor" />
             </svg>
             {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div style={styles.successMessage}>
+            <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            {successMessage}
+            <Link to="/developer/login" style={{ color: "#065f46", fontWeight: "bold", marginTop: "8px" }}>
+              Aller à la page de connexion →
+            </Link>
           </div>
         )}
 
@@ -423,23 +430,20 @@ export default function DeveloperSignup() {
           <p>Déjà un compte ? <Link to="/developer/login" style={styles.loginLink}>Se connecter</Link></p>
         </div>
 
-        {/* ⭐ SÉPARATEUR + BOUTON GOOGLE */}
         <div style={styles.separator}>
           <span style={styles.separatorText}>ou</span>
         </div>
 
         <div style={styles.socialContainer}>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              text="signup_with"
-              theme="outline"
-              size="large"
-              shape="rectangular"
-              width="200"
-            />
-          </div>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            text="signup_with"
+            theme="outline"
+            size="large"
+            shape="rectangular"
+            width="200"
+          />
         </div>
       </div>
     </div>

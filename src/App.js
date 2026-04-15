@@ -25,6 +25,7 @@ import DeveloperSignup from "./pages/DeveloperSignup";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
 import DeveloperSettings from "./pages/DeveloperSettings";
 import TermsOfService from "./pages/TermsOfService";
+import VerifyEmail from "./pages/VerifyEmail";
 // ⭐ AJOUTE CETTE CONSTANTE (ton client_id Google)
 const GOOGLE_CLIENT_ID = "84499611206-pquink4aps0ked49ngi5t3rqk5p6ho6v.apps.googleusercontent.com";
 
@@ -46,7 +47,7 @@ function App() {
           <Route path="/dashboard" element={<UnifiedDashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           {/* Routes Développeur */}
           <Route path="/developer/login" element={<DeveloperLogin />} />

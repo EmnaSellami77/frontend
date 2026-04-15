@@ -15,6 +15,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -23,6 +24,7 @@ export default function Register() {
       [e.target.name]: e.target.value
     });
     if (error) setError("");
+    if (successMessage) setSuccessMessage("");
   };
 
   const handleSubmit = async (e) => {
@@ -45,34 +47,31 @@ export default function Register() {
     }
 
     setLoading(true);
+    setError("");
+    setSuccessMessage("");
     try {
-      await API.post("/auth/signup", {
-        name: form.fullName,
-        email: form.email,
-        password: form.password,
-        role: "it_consultant"
-      });
-      navigate("/login");
-    } catch (err) {
-      const errorMessage = err.response?.data?.error || "Erreur lors de l'inscription";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const response = await API.post("/auth/signup", {
+    name: form.fullName,
+    email: form.email,
+    password: form.password,
+    role: "it_consultant"  // ou "developer"
+  });
+  setSuccessMessage(response.data.message || "Inscription réussie ! Un code de vérification a été envoyé.");
+  // Redirection vers la page de vérification
+  setTimeout(() => navigate("/verify-email"), 3000);
+} catch (err) {
+  setError(err.response?.data?.error || "Erreur lors de l'inscription");
+}};
 
-  // ⭐ Inscription avec Google
+  // Inscription avec Google
   const handleGoogleSuccess = async (credentialResponse) => {
     const id_token = credentialResponse.credential;
-    
     setLoading(true);
+    setError("");
+    setSuccessMessage("");
     try {
-      const response = await API.post('/auth/google', {
-        id_token: id_token
-      });
-      
+      const response = await API.post('/auth/google', { id_token });
       const data = response.data;
-      
       if (data.success) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -95,7 +94,7 @@ export default function Register() {
     setError("L'inscription avec Google a échoué. Veuillez réessayer.");
   };
 
-  // Styles identiques à l'original
+  // Styles
   const styles = {
     container: {
       minHeight: "100vh",
@@ -172,6 +171,20 @@ export default function Register() {
       fontSize: "0.9rem",
       marginBottom: "20px",
     },
+    successMessage: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: "8px",
+      padding: "12px 16px",
+      backgroundColor: "#d1fae5",
+      border: "1px solid #a7f3d0",
+      borderRadius: "12px",
+      color: "#065f46",
+      fontSize: "0.9rem",
+      marginBottom: "20px",
+      textAlign: "center",
+    },
     form: {
       display: "flex",
       flexDirection: "column",
@@ -189,11 +202,6 @@ export default function Register() {
       fontSize: "0.9rem",
       fontWeight: "500",
       color: "#475569",
-    },
-    labelIcon: {
-      width: "16px",
-      height: "16px",
-      stroke: "#94a3b8",
     },
     input: {
       padding: "12px 16px",
@@ -298,25 +306,6 @@ export default function Register() {
       gap: "12px",
       marginTop: "10px",
     },
-    socialButton: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "8px",
-      padding: "10px",
-      backgroundColor: "#ffffff",
-      border: "1px solid #e2e8f0",
-      borderRadius: "10px",
-      color: "#1e293b",
-      fontSize: "0.9rem",
-      fontWeight: "500",
-      cursor: "pointer",
-      transition: "all 0.2s ease",
-    },
-    socialIcon: {
-      width: "18px",
-      height: "18px",
-    },
   };
 
   return (
@@ -347,6 +336,19 @@ export default function Register() {
               <circle cx="12" cy="16" r="1" fill="currentColor" />
             </svg>
             {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div style={styles.successMessage}>
+            <svg style={{ width: "18px", height: "18px" }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            {successMessage}
+            <Link to="/login" style={{ color: "#065f46", fontWeight: "bold", marginTop: "8px" }}>
+              Aller à la page de connexion →
+            </Link>
           </div>
         )}
 
@@ -444,7 +446,6 @@ export default function Register() {
         </div>
 
         <div style={styles.socialContainer}>
-          {/* ⭐ Uniquement le bouton Google */}
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
