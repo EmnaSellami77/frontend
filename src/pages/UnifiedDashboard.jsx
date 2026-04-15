@@ -56,12 +56,6 @@ const formatDate = (dateString) => {
   });
 };
 
-const getScoreColor = (score) => {
-  if (score > 0.8) return "#22c55e";
-  if (score > 0.5) return "#f59e0b";
-  return "#ef4444";
-};
-
 const mapPriorityToDisplay = (priority) => {
   const mapping = { high: 'Haute', medium: 'Moyenne', low: 'Basse' };
   return mapping[priority] || 'Moyenne';
@@ -73,7 +67,7 @@ const mapDisplayToPriority = (display) => {
 };
 
 // ============================================
-// ICONS COMPONENTS (inchangés)
+// ICONS COMPONENTS
 // ============================================
 
 const IconWrapper = React.memo(({ children, size = 20, color = "currentColor" }) => (
@@ -153,7 +147,7 @@ const Icons = {
 };
 
 // ============================================
-// STYLES (inchangés)
+// STYLES
 // ============================================
 
 const styles = {
@@ -215,7 +209,7 @@ const styles = {
 };
 
 // ============================================
-// COMPOSANTS RÉUTILISABLES (Badge, ScoreBar, StatCard, Header, PrioritySelector, StatusSelector)
+// COMPOSANTS RÉUTILISABLES
 // ============================================
 
 const Badge = React.memo(({ config, label }) => {
@@ -236,19 +230,6 @@ const Badge = React.memo(({ config, label }) => {
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: safeConfig.dot, flexShrink: 0 }} />
       {label || safeConfig.label}
     </span>
-  );
-});
-
-const ScoreBar = React.memo(({ score }) => {
-  const pct = Math.round(score * 100);
-  const color = getScoreColor(score);
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ flex: 1, height: 5, background: COLORS.border, borderRadius: 4, overflow: "hidden" }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 4, transition: "width 0.3s ease" }} />
-      </div>
-      <span style={{ fontSize: 12, fontWeight: 700, color, minWidth: 34 }}>{pct}%</span>
-    </div>
   );
 });
 
@@ -360,7 +341,7 @@ const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
 // COMPOSANT PRINCIPAL
 // ============================================
 
-// Colonnes : une seule colonne Priorité (modifiable)
+// Colonnes : suppression de "Score IA"
 const COLUMNS = [
   { key: "id", label: "#", sortable: true },
   { key: "type", label: "Type de problème", sortable: true },
@@ -368,7 +349,6 @@ const COLUMNS = [
   { key: "utilisateur", label: "Créé par", sortable: true },
   { key: "dateCreation", label: "Date", sortable: true },
   { key: "priorite", label: "Priorité", sortable: true },
-  { key: "scoreConfiance", label: "Score IA", sortable: true },
   { key: "status", label: "Statut", sortable: true },
   { key: "actions", label: "Actions", sortable: false },
 ];
@@ -379,7 +359,6 @@ function UnifiedDashboard() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  // Tri initial par priorité décroissante (Haute en premier)
   const [sortConfig, setSortConfig] = useState({ key: "priorite", direction: "desc" });
   const [modalState, setModalState] = useState({ isOpen: false, ticket: null, prediction: null, loading: false, error: null });
 
@@ -402,7 +381,6 @@ function UnifiedDashboard() {
         utilisateur: t.user_name || t.user_email || "Inconnu",
         dateCreation: t.dateCreation || new Date().toISOString(),
         priorite: mapPriorityToDisplay(t.priorite_predite || t.priorite),
-        scoreConfiance: t.scoreConfiance !== undefined ? t.scoreConfiance : 0.75,
         status: t.status || "En attente"
       }));
       setTickets(formatted);
@@ -589,7 +567,7 @@ function UnifiedDashboard() {
               <tbody>
                 {filteredAndSortedTickets.length === 0 ? (
                   <tr>
-                    <td colSpan={9} style={{ padding: "48px 0", textAlign: "center", color: COLORS.lightGray }}>Aucun ticket trouvé</td>
+                    <td colSpan={8} style={{ padding: "48px 0", textAlign: "center", color: COLORS.lightGray }}>Aucun ticket trouvé</td>
                   </tr>
                 ) : (
                   filteredAndSortedTickets.map((ticket, idx) => (
@@ -610,9 +588,6 @@ function UnifiedDashboard() {
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.gray }}>{formatDate(ticket.dateCreation)}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <PrioritySelector currentPriority={ticket.priorite} onPriorityChange={(p) => handlePriorityChange(ticket.id, p)} />
-                      </td>
-                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, minWidth: 130 }}>
-                        <ScoreBar score={ticket.scoreConfiance} />
                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <StatusSelector currentStatus={ticket.status} onStatusChange={(s) => handleStatusChange(ticket.id, s)} />
@@ -663,7 +638,7 @@ function UnifiedDashboard() {
                       <p style={{ fontSize: 13, color: COLORS.gray, marginBottom: 6 }}>Catégorie prédite :</p>
                       <div style={{ background: COLORS.primaryLight, color: COLORS.primary, padding: "10px 16px", borderRadius: 8, fontWeight: 700 }}>{modalState.prediction.prediction || modalState.prediction.category}</div>
                     </div>
-                    <div><p style={{ fontSize: 13, color: COLORS.gray, marginBottom: 6 }}>Niveau de confiance :</p><ScoreBar score={modalState.prediction.confidence || 0.75} /></div>
+                    <div><p style={{ fontSize: 13, color: COLORS.gray, marginBottom: 6 }}>Niveau de confiance :</p><div style={{ color: COLORS.primary, fontWeight: 600 }}>{Math.round((modalState.prediction.confidence || 0.75) * 100)}%</div></div>
                   </div>
                   <button onClick={closeModal} style={{ ...styles.button.secondary, padding: "10px 20px", borderRadius: 8, width: "100%" }}>Fermer</button>
                 </>
