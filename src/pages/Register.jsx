@@ -50,27 +50,33 @@ export default function Register() {
     setError("");
     setSuccessMessage("");
     try {
-  const response = await API.post("/auth/signup", {
-    name: form.fullName,
-    email: form.email,
-    password: form.password,
-    role: "it_consultant"  // ou "developer"
-  });
-  setSuccessMessage(response.data.message || "Inscription réussie ! Un code de vérification a été envoyé.");
-  // Redirection vers la page de vérification
-  setTimeout(() => navigate("/verify-email"), 3000);
-} catch (err) {
-  setError(err.response?.data?.error || "Erreur lors de l'inscription");
-}};
+      const response = await API.post("/auth/signup", {
+        name: form.fullName,
+        email: form.email,
+        password: form.password,
+        role: "it_consultant"
+      });
+      setSuccessMessage(response.data.message || "Inscription réussie ! Un code de vérification a été envoyé.");
+      // Redirection vers la page de vérification
+      setTimeout(() => navigate("/verify-email"), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur lors de l'inscription");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Inscription avec Google
+  // Inscription avec Google (IT Consultant)
   const handleGoogleSuccess = async (credentialResponse) => {
     const id_token = credentialResponse.credential;
     setLoading(true);
     setError("");
     setSuccessMessage("");
     try {
-      const response = await API.post('/auth/google', { id_token });
+      const response = await API.post('/auth/google', {
+        id_token: id_token,
+        role: "it_consultant"
+      });
       const data = response.data;
       if (data.success) {
         localStorage.setItem('token', data.token);
@@ -94,7 +100,7 @@ export default function Register() {
     setError("L'inscription avec Google a échoué. Veuillez réessayer.");
   };
 
-  // Styles
+  // Styles (inchangés, identiques à votre version)
   const styles = {
     container: {
       minHeight: "100vh",
