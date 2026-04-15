@@ -18,7 +18,8 @@ function DeveloperLogin() {
     try {
       const res = await API.post('/auth/login', {
         email: form.email,
-        password: form.password
+        password: form.password,
+        role: "developer"
       });
       const { token, user } = res.data;
       localStorage.setItem('token', token);
