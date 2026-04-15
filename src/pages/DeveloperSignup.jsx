@@ -1,17 +1,42 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { GoogleLogin } from '@react-oauth/google';
 import API from "../services/api";
 
 export default function DeveloperSignup() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", confirmPassword: "" });
+  const location = useLocation();
+  
+  // Récupérer les données sauvegardées si on revient de TermsOfService
+  const getSavedFormData = () => {
+    const savedData = localStorage.getItem('developer_register_form_data');
+    if (savedData) {
+      return JSON.parse(savedData);
+    }
+    // Si on vient de TermsOfService avec des données
+    if (location.state?.formData) {
+      return location.state.formData;
+    }
+    return {
+      fullName: "",
+      email: "",
+      password: "",
+      confirmPassword: ""
+    };
+  };
+
+  const [form, setForm] = useState(getSavedFormData());
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Sauvegarder les données dans localStorage à chaque changement
+  useEffect(() => {
+    localStorage.setItem('developer_register_form_data', JSON.stringify(form));
+  }, [form]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -45,6 +70,8 @@ export default function DeveloperSignup() {
         role: "developer"
       });
       setSuccessMessage(response.data.message || "Inscription réussie ! Un code de vérification a été envoyé.");
+      // Nettoyer localStorage après succès
+      localStorage.removeItem('developer_register_form_data');
       setTimeout(() => navigate("/verify-email"), 3000);
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'inscription");
@@ -69,6 +96,7 @@ export default function DeveloperSignup() {
         localStorage.setItem('user', JSON.stringify(data.user));
         const role = data.user.role || 'developer';
         localStorage.setItem('role', role);
+        localStorage.removeItem('developer_register_form_data');
         navigate("/developer/dashboard");
       } else {
         setError(data.error || "Erreur d'inscription avec Google");
