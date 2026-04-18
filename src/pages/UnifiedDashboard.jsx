@@ -13,7 +13,7 @@ const PRIORITY_CONFIG = {
 };
 
 const STATUS_CONFIG = {
-  "En attente": { bg: "#fffbeb", color: "#b45309", dot: "#f59e0b", label: "En attente" },
+  "Non résolu": { bg: "#fffbeb", color: "#b40909", dot: "#f50b0b", label: "Non résolu" },
   "En cours":   { bg: "#eff6ff", color: "#1d4ed8", dot: "#3b82f6", label: "En cours" },
   "Résolu":     { bg: "#f0fdf4", color: "#15803d", dot: "#22c55e", label: "Résolu" },
 };
@@ -313,8 +313,8 @@ const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
 
 const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const statuses = ["En attente", "En cours", "Résolu"];
-  const safeStatus = STATUS_CONFIG[currentStatus] ? currentStatus : "En attente";
+  const statuses = ["Non résolu", "En cours", "Résolu"];
+  const safeStatus = STATUS_CONFIG[currentStatus] ? currentStatus : "Non résolu";
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setIsOpen(!isOpen)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: 0, background: "none", border: "none", cursor: "pointer" }}>
@@ -341,7 +341,6 @@ const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
 // COMPOSANT PRINCIPAL
 // ============================================
 
-// Colonnes : suppression de "Score IA"
 const COLUMNS = [
   { key: "id", label: "#", sortable: true },
   { key: "type", label: "Type de problème", sortable: true },
@@ -350,6 +349,7 @@ const COLUMNS = [
   { key: "dateCreation", label: "Date", sortable: true },
   { key: "priorite", label: "Priorité", sortable: true },
   { key: "status", label: "Statut", sortable: true },
+  { key: "attachments", label: "Fichiers", sortable: false },
   { key: "actions", label: "Actions", sortable: false },
 ];
 
@@ -381,7 +381,8 @@ function UnifiedDashboard() {
         utilisateur: t.user_name || t.user_email || "Inconnu",
         dateCreation: t.dateCreation || new Date().toISOString(),
         priorite: mapPriorityToDisplay(t.priorite_predite || t.priorite),
-        status: t.status || "En attente"
+        status: t.status || "Non résolu",
+        attachments: t.attachments || []
       }));
       setTickets(formatted);
     } catch (err) {
@@ -411,10 +412,9 @@ function UnifiedDashboard() {
   const stats = useMemo(() => ({
     total: tickets.length,
     resolved: tickets.filter(t => t.status === "Résolu").length,
-    pending: tickets.filter(t => ["En attente", "En cours"].includes(t.status)).length,
+    pending: tickets.filter(t => ["Non résolu", "En cours"].includes(t.status)).length,
   }), [tickets]);
 
-  // Filtrage et tri avec ordre personnalisé pour la priorité
   const filteredAndSortedTickets = useMemo(() => {
     let result = [...tickets];
     if (search) {
@@ -426,11 +426,10 @@ function UnifiedDashboard() {
       );
     }
     const { key, direction } = sortConfig;
-    if (key && key !== 'actions') {
+    if (key && key !== 'actions' && key !== 'attachments') {
       result.sort((a, b) => {
         let aVal = a[key];
         let bVal = b[key];
-        // Gestion spéciale pour la priorité (ordre Haute > Moyenne > Basse)
         if (key === 'priorite') {
           const order = { 'Haute': 3, 'Moyenne': 2, 'Basse': 1 };
           aVal = order[aVal] || 0;
@@ -459,7 +458,7 @@ function UnifiedDashboard() {
   };
   const handleSettings = () => navigate("/settings");
   const handleSort = (key) => {
-    if (key === 'actions') return;
+    if (key === 'actions' || key === 'attachments') return;
     setSortConfig(prev => ({ key, direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc" }));
   };
 
@@ -537,7 +536,7 @@ function UnifiedDashboard() {
         <div style={styles.statsGrid}>
           <StatCard icon={Icons.Ticket} label="Total Tickets" value={stats.total} color={COLORS.primary} bg={COLORS.primaryLight} />
           <StatCard icon={Icons.Check} label="Résolus" value={stats.resolved} color={COLORS.success} bg={COLORS.successLight} />
-          <StatCard icon={Icons.Clock} label="En attente" value={stats.pending} color={COLORS.warning} bg={COLORS.warningLight} />
+          <StatCard icon={Icons.Clock} label="Non résolus" value={stats.pending} color={COLORS.warning} bg={COLORS.warningLight} />
         </div>
 
         <div style={styles.card}>
@@ -555,10 +554,27 @@ function UnifiedDashboard() {
               <thead>
                 <tr style={{ background: COLORS.background }}>
                   {COLUMNS.map(col => (
-                    <th key={col.key} onClick={() => handleSort(col.key)} style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, color: COLORS.gray, fontSize: 12, textTransform: "uppercase", cursor: col.sortable ? "pointer" : "default", borderBottom: `1px solid ${COLORS.border}` }}>
+                    <th
+                      key={col.key}
+                      onClick={() => handleSort(col.key)}
+                      style={{
+                        padding: "12px 16px",
+                        textAlign: "left",
+                        fontWeight: 600,
+                        color: COLORS.gray,
+                        fontSize: 12,
+                        textTransform: "uppercase",
+                        cursor: col.sortable ? "pointer" : "default",
+                        borderBottom: `1px solid ${COLORS.border}`
+                      }}
+                    >
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         {col.label}
-                        {col.sortable && <span style={{ color: sortConfig.key === col.key ? COLORS.primary : COLORS.lightGray }}><Icons.Chevron dir={sortConfig.key === col.key && sortConfig.direction === "desc" ? "down" : "up"} /></span>}
+                        {col.sortable && (
+                          <span style={{ color: sortConfig.key === col.key ? COLORS.primary : COLORS.lightGray }}>
+                            <Icons.Chevron dir={sortConfig.key === col.key && sortConfig.direction === "desc" ? "down" : "up"} />
+                          </span>
+                        )}
                       </div>
                     </th>
                   ))}
@@ -567,7 +583,7 @@ function UnifiedDashboard() {
               <tbody>
                 {filteredAndSortedTickets.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ padding: "48px 0", textAlign: "center", color: COLORS.lightGray }}>Aucun ticket trouvé</td>
+                    <td colSpan={9} style={{ padding: "48px 0", textAlign: "center", color: COLORS.lightGray }}>Aucun ticket trouvé</td>
                   </tr>
                 ) : (
                   filteredAndSortedTickets.map((ticket, idx) => (
@@ -591,6 +607,36 @@ function UnifiedDashboard() {
                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <StatusSelector currentStatus={ticket.status} onStatusChange={(s) => handleStatusChange(ticket.id, s)} />
+                      </td>
+                      <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
+                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", maxWidth: "200px" }}>
+                          {ticket.attachments && ticket.attachments.length > 0 ? (
+                            ticket.attachments.map((att, idx) => (
+                              <a
+                                key={idx}
+                                href={att.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  fontSize: "11px",
+                                  background: "#eef2ff",
+                                  padding: "3px 8px",
+                                  borderRadius: "16px",
+                                  color: COLORS.primary,
+                                  textDecoration: "none",
+                                }}
+                                title={att.filename}
+                              >
+                                📎 {att.filename.length > 15 ? att.filename.slice(0, 12) + "…" : att.filename}
+                              </a>
+                            ))
+                          ) : (
+                            <span style={{ color: COLORS.lightGray, fontSize: "11px" }}>—</span>
+                          )}
+                        </div>
                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <div style={{ display: "flex", gap: 8 }}>

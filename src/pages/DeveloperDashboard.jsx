@@ -24,6 +24,8 @@ export default function DeveloperDashboard() {
   const [tickets, setTickets] = useState([]);
   const [prevTickets, setPrevTickets] = useState([]);
   const [stats, setStats] = useState({});
+  const [attachments, setAttachments] = useState([]); // Fichiers à uploader
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -47,10 +49,10 @@ export default function DeveloperDashboard() {
         date: new Date(t.dateCreation).toLocaleString(),
         priority: t.priorite,
         status: t.status || "En attente",
-        scoreConfiance: t.scoreConfiance || 0.75
+        scoreConfiance: t.scoreConfiance || 0.75,
+        attachments: t.attachments || [] // URLs des fichiers joints
       }));
       
-      // Détection des tickets nouvellement résolus (pour notification)
       const newResolved = converted.filter(t => 
         t.status === "Résolu" && 
         prevTickets.find(prev => prev.id === t.id)?.status !== "Résolu"
@@ -77,19 +79,11 @@ export default function DeveloperDashboard() {
     }
   }, [prevTickets, navigate]);
 
-  // Chargement initial et polling toutes les 5s
   useEffect(() => {
     fetchTickets();
     const interval = setInterval(() => fetchTickets(), 5000);
     return () => clearInterval(interval);
   }, [fetchTickets]);
-
-  const mapTypeToPriority = (type) => {
-    const t = type.toLowerCase();
-    if (t.includes("critique") || t.includes("urgent") || t.includes("haute")) return "high";
-    if (t.includes("mineur") || t.includes("faible") || t.includes("basse")) return "low";
-    return "medium";
-  };
 
   const handleAnalyze = async () => {
     if (!problem || !type) {
@@ -98,19 +92,26 @@ export default function DeveloperDashboard() {
     }
 
     try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("subject", problem);
+      formData.append("body", problem);
+      formData.append("type_personnalise", type);
+      // Ajout des fichiers
+      attachments.forEach(file => {
+        formData.append("attachments", file);
+      });
+
       if (editingId) {
-        // Mise à jour : envoyer les champs autorisés par le backend
-        await API.put(`/tickets/${editingId}`, {
-          titre: problem,
-          type_personnalise: type,
+        // Mise à jour : on envoie les nouveaux fichiers (les anciens restent sauf si backend gère la suppression)
+        await API.put(`/tickets/${editingId}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" }
         });
         toast.info("Ticket modifié avec succès");
       } else {
         // Création
-        await API.post('/tickets/create', {
-          subject: problem,
-          body: problem,
-          type_personnalise: type,
+        await API.post('/tickets/create', formData, {
+          headers: { "Content-Type": "multipart/form-data" }
         });
         toast.success("Ticket créé avec succès");
       }
@@ -118,9 +119,12 @@ export default function DeveloperDashboard() {
       setProblem("");
       setType("");
       setEditingId(null);
+      setAttachments([]);
     } catch (err) {
       console.error(err);
       alert("Erreur : " + (err.response?.data?.error || err.message));
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -128,6 +132,7 @@ export default function DeveloperDashboard() {
     setEditingId(ticket.id);
     setType(ticket.type);
     setProblem(ticket.description);
+    setAttachments([]); // On ne recharge pas les anciens fichiers pour simplifier
   };
 
   const handleDelete = async (id) => {
@@ -140,6 +145,7 @@ export default function DeveloperDashboard() {
         setEditingId(null);
         setProblem("");
         setType("");
+        setAttachments([]);
       }
     } catch (err) {
       alert("Erreur suppression : " + err.message);
@@ -152,6 +158,15 @@ export default function DeveloperDashboard() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/");
+  };
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setAttachments(prev => [...prev, ...files]);
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const categories = Object.keys(stats);
@@ -178,7 +193,7 @@ export default function DeveloperDashboard() {
 
   const totalTickets = values.reduce((sum, val) => sum + val, 0);
 
-  // Styles (inchangés, identiques à votre version)
+  // Styles inchangés (vous pouvez les reprendre de votre code original)
   const styles = {
     page: { backgroundColor: "#f9fafb", minHeight: "100vh", padding: "30px", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
     header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px", padding: "20px 30px", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", borderRadius: "16px", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02)" },
@@ -204,6 +219,10 @@ export default function DeveloperDashboard() {
     hint: { display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", fontSize: "0.8rem", color: "#94a3b8" },
     hintIcon: { width: "14px", height: "14px", stroke: "#94a3b8" },
     textarea: { width: "100%", padding: "12px 16px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "0.95rem", color: "#1e293b", resize: "vertical", outline: "none", fontFamily: "inherit" },
+    fileInput: { width: "100%", padding: "10px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", fontSize: "0.9rem", color: "#475569" },
+    attachmentsPreview: { marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "8px" },
+    attachmentBadge: { display: "inline-flex", alignItems: "center", gap: "8px", backgroundColor: "#f1f5f9", borderRadius: "20px", padding: "5px 10px", fontSize: "0.8rem", color: "#1e293b" },
+    removeFileBtn: { background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "1.2rem", lineHeight: "1", padding: "0 4px" },
     buttonGroup: { display: "flex", gap: "12px" },
     button: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", flex: 1, padding: "14px", background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", border: "none", borderRadius: "12px", color: "#ffffff", fontSize: "1rem", fontWeight: "600", cursor: "pointer", boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.3)" },
     cancelButton: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", flex: 1, padding: "14px", backgroundColor: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "12px", color: "#475569", fontSize: "1rem", fontWeight: "600", cursor: "pointer" },
@@ -218,7 +237,9 @@ export default function DeveloperDashboard() {
     ticketHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px", flexWrap: "wrap" },
     ticketType: { padding: "4px 12px", borderRadius: "20px", fontSize: "0.85rem", fontWeight: "600", color: "#ffffff" },
     ticketDate: { fontSize: "0.8rem", color: "#94a3b8" },
-    ticketDescription: { margin: 0, fontSize: "0.9rem", color: "#475569", lineHeight: "1.5" },
+    ticketDescription: { margin: "0 0 8px 0", fontSize: "0.9rem", color: "#475569", lineHeight: "1.5" },
+    attachmentsList: { display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "8px" },
+    attachmentLink: { display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", backgroundColor: "#e6f0ff", padding: "2px 8px", borderRadius: "16px", color: "#2563eb", textDecoration: "none" },
     ticketActions: { display: "flex", gap: "8px", marginLeft: "12px" },
     editButton: { padding: "8px", backgroundColor: "#e6f0ff", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
     deleteButton: { padding: "8px", backgroundColor: "#fee2e2", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
@@ -318,16 +339,45 @@ export default function DeveloperDashboard() {
               <textarea value={problem} onChange={(e) => setProblem(e.target.value)} style={styles.textarea} placeholder="Décrivez votre problème en détail..." rows="4" />
             </div>
 
+            {/* Nouveau champ : import de fichiers */}
+            <div style={styles.formGroup}>
+              <label style={styles.label}>
+                <svg style={styles.labelIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                  <polyline points="13 2 13 9 20 9" />
+                </svg>
+                Fichiers joints (images, PDF, etc.)
+              </label>
+              <input type="file" multiple onChange={handleFileChange} style={styles.fileInput} accept="image/*,application/pdf, .txt, .docx" />
+              {attachments.length > 0 && (
+                <div style={styles.attachmentsPreview}>
+                  {attachments.map((file, idx) => (
+                    <span key={idx} style={styles.attachmentBadge}>
+                      {file.name} ({(file.size / 1024).toFixed(0)} KB)
+                      <button type="button" onClick={() => removeAttachment(idx)} style={styles.removeFileBtn}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div style={styles.hint}>
+                <svg style={styles.hintIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v8M8 12h8" />
+                </svg>
+                <span>Vous pouvez joindre plusieurs fichiers (images, documents).</span>
+              </div>
+            </div>
+
             <div style={styles.buttonGroup}>
-              <button onClick={handleAnalyze} style={styles.button}>
+              <button onClick={handleAnalyze} disabled={uploading} style={styles.button}>
                 <svg style={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   {editingId ? <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34" /> : <line x1="22" y1="2" x2="11" y2="13" />}
                   {editingId ? <polygon points="18 2 22 6 12 16 8 16 8 12 18 2" /> : <polygon points="22 2 15 22 11 13 2 9 22 2" />}
                 </svg>
-                {editingId ? "Mettre à jour" : "Envoyer le ticket"}
+                {uploading ? "Envoi en cours..." : (editingId ? "Mettre à jour" : "Envoyer le ticket")}
               </button>
               {editingId && (
-                <button onClick={() => { setEditingId(null); setProblem(""); setType(""); }} style={styles.cancelButton}>
+                <button onClick={() => { setEditingId(null); setProblem(""); setType(""); setAttachments([]); }} style={styles.cancelButton}>
                   <svg style={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
@@ -355,6 +405,16 @@ export default function DeveloperDashboard() {
                         <span style={styles.ticketDate}>{ticket.date}</span>
                       </div>
                       <p style={styles.ticketDescription}>{ticket.description}</p>
+                      {/* Affichage des fichiers joints */}
+                      {ticket.attachments && ticket.attachments.length > 0 && (
+                        <div style={styles.attachmentsList}>
+                          {ticket.attachments.map((att, idx) => (
+                            <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" style={styles.attachmentLink}>
+                              📎 {att.filename || `pièce-${idx+1}`}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div style={styles.ticketActions}>
                       <button onClick={() => handleEdit(ticket)} style={styles.editButton} title="Modifier">
