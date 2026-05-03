@@ -21,16 +21,21 @@ function Login() {
         password: form.password
       });
       const { token, user } = res.data;
+
+      // 🔒 Interdire l'accès aux développeurs sur cette page de login
+      if (user.role === 'developer') {
+        setError("Accès refusé : les comptes développeur ne peuvent pas se connecter via cette interface.");
+        return; // On arrête ici, on ne stocke rien
+      }
+
+      // Connexion autorisée pour les autres rôles
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('role', user.role);
 
-      // Redirection selon le rôle
-      if (user.role === 'developer') {
-        navigate("/developer/dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+      // Redirection unique vers le dashboard IT (quel que soit le rôle autorisé)
+      navigate("/dashboard");
+
     } catch (err) {
       setError(err.response?.data?.error || "Identifiants incorrects");
     }
