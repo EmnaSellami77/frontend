@@ -43,7 +43,7 @@ const API_CONFIG = {
 };
 
 // ============================================
-// UTILITY FUNCTIONS
+// UTILITY FUNCTIONS (normalisation robuste)
 // ============================================
 
 const formatDate = (dateString) => {
@@ -57,13 +57,34 @@ const formatDate = (dateString) => {
 };
 
 const mapPriorityToDisplay = (priority) => {
-  const mapping = { high: 'Haute', medium: 'Moyenne', low: 'Basse' };
-  return mapping[priority] || 'Moyenne';
+  if (!priority) return 'Moyenne';
+  const str = String(priority).toLowerCase();
+  if (str === 'high' || str === 'haute') return 'Haute';
+  if (str === 'medium' || str === 'moyenne') return 'Moyenne';
+  if (str === 'low' || str === 'basse') return 'Basse';
+  return 'Moyenne';
 };
 
 const mapDisplayToPriority = (display) => {
   const mapping = { Haute: 'high', Moyenne: 'medium', Basse: 'low' };
   return mapping[display] || 'medium';
+};
+
+/**
+ * Normalise n'importe quel statut (provenant du backend) vers l'affichage français.
+ * Garantit que le statut sera l'un des trois : "Non résolu", "En cours", "Résolu".
+ */
+const normalizeStatus = (status) => {
+  if (!status) return "Non résolu";
+  const str = String(status).toLowerCase().trim();
+  // Résolu
+  if (str === 'résolu' || str === 'resolu' || str === 'closed' || str === 'done' || str === 'resolved') 
+    return "Résolu";
+  // En cours
+  if (str === 'en cours' || str === 'encours' || str === 'in_progress' || str === 'in progress' || str === 'progress') 
+    return "En cours";
+  // Non résolu (par défaut)
+  return "Non résolu";
 };
 
 // ============================================
@@ -314,6 +335,7 @@ const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
 const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const statuses = ["Non résolu", "En cours", "Résolu"];
+  // currentStatus est déjà normalisé (garanti d'être dans STATUS_CONFIG)
   const safeStatus = STATUS_CONFIG[currentStatus] ? currentStatus : "Non résolu";
   return (
     <div style={{ position: "relative" }}>
@@ -376,12 +398,13 @@ function UnifiedDashboard() {
       const data = response.data;
       const formatted = data.map(t => ({
         id: t._id || `temp-${Math.random()}`,
-        type: t.type_personnalise || "Standard",
+        type: t.type_personnalise || t.type || "Standard",
         description: t.description || t.titre || "Aucune description",
         utilisateur: t.user_name || t.user_email || "Inconnu",
-        dateCreation: t.dateCreation || new Date().toISOString(),
+        dateCreation: t.dateCreation || t.createdAt || new Date().toISOString(),
+        // Normalisation priorité et statut
         priorite: mapPriorityToDisplay(t.priorite_predite || t.priorite),
-        status: t.status || "Non résolu",
+        status: normalizeStatus(t.status),
         attachments: t.attachments || []
       }));
       setTickets(formatted);
@@ -409,10 +432,11 @@ function UnifiedDashboard() {
   const isITConsultant = role === "it_consultant" || role === "Consultant IT" || role === "it";
   const currentDate = useMemo(() => new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }), []);
 
+  // Correction du comptage : "Non résolus" = tous les tickets qui ne sont pas "Résolu"
   const stats = useMemo(() => ({
     total: tickets.length,
     resolved: tickets.filter(t => t.status === "Résolu").length,
-    pending: tickets.filter(t => ["Non résolu", "En cours"].includes(t.status)).length,
+    unresolved: tickets.filter(t => t.status !== "Résolu").length,   // <-- corrigé ici
   }), [tickets]);
 
   const filteredAndSortedTickets = useMemo(() => {
@@ -474,6 +498,7 @@ function UnifiedDashboard() {
 
   const handleStatusChange = async (ticketId, newStatus) => {
     try {
+      // On envoie le nouveau statut au backend (on suppose qu'il accepte les chaînes françaises)
       await API.put(`/tickets/${ticketId}`, { status: newStatus });
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
     } catch (err) { 
@@ -536,7 +561,7 @@ function UnifiedDashboard() {
         <div style={styles.statsGrid}>
           <StatCard icon={Icons.Ticket} label="Total Tickets" value={stats.total} color={COLORS.primary} bg={COLORS.primaryLight} />
           <StatCard icon={Icons.Check} label="Résolus" value={stats.resolved} color={COLORS.success} bg={COLORS.successLight} />
-          <StatCard icon={Icons.Clock} label="Non résolus" value={stats.pending} color={COLORS.warning} bg={COLORS.warningLight} />
+          <StatCard icon={Icons.Clock} label="Non résolus" value={stats.unresolved} color={COLORS.warning} bg={COLORS.warningLight} />
         </div>
 
         <div style={styles.card}>
@@ -592,7 +617,7 @@ function UnifiedDashboard() {
                         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, background: COLORS.primaryLight, color: COLORS.primary, borderRadius: 6, fontWeight: 700, fontSize: 12 }}>
                           {typeof ticket.id === 'string' ? ticket.id.slice(-4) : ticket.id}
                         </span>
-                      </td>
+                       </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, fontWeight: 500, color: COLORS.dark }}>{ticket.type}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.gray, maxWidth: 250, wordBreak: "break-word" }}>{ticket.description}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
