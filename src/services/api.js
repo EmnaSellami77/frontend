@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://back2.onrender.com',
+  baseURL: 'https://back2-ys67.onrender.com',  // ← AJOUTE "-ys67"
   headers: { 'Content-Type': 'application/json' }
 });
 
