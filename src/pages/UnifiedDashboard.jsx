@@ -43,7 +43,7 @@ const API_CONFIG = {
 };
 
 // ============================================
-// UTILITY FUNCTIONS (normalisation robuste)
+// UTILITY FUNCTIONS
 // ============================================
 
 const formatDate = (dateString) => {
@@ -70,20 +70,13 @@ const mapDisplayToPriority = (display) => {
   return mapping[display] || 'medium';
 };
 
-/**
- * Normalise n'importe quel statut (provenant du backend) vers l'affichage français.
- * Garantit que le statut sera l'un des trois : "Non résolu", "En cours", "Résolu".
- */
 const normalizeStatus = (status) => {
   if (!status) return "Non résolu";
   const str = String(status).toLowerCase().trim();
-  // Résolu
   if (str === 'résolu' || str === 'resolu' || str === 'closed' || str === 'done' || str === 'resolved') 
     return "Résolu";
-  // En cours
   if (str === 'en cours' || str === 'encours' || str === 'in_progress' || str === 'in progress' || str === 'progress') 
     return "En cours";
-  // Non résolu (par défaut)
   return "Non résolu";
 };
 
@@ -335,7 +328,6 @@ const PrioritySelector = React.memo(({ currentPriority, onPriorityChange }) => {
 const StatusSelector = React.memo(({ currentStatus, onStatusChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const statuses = ["Non résolu", "En cours", "Résolu"];
-  // currentStatus est déjà normalisé (garanti d'être dans STATUS_CONFIG)
   const safeStatus = STATUS_CONFIG[currentStatus] ? currentStatus : "Non résolu";
   return (
     <div style={{ position: "relative" }}>
@@ -402,8 +394,8 @@ function UnifiedDashboard() {
         description: t.description || t.titre || "Aucune description",
         utilisateur: t.user_name || t.user_email || "Inconnu",
         dateCreation: t.dateCreation || t.createdAt || new Date().toISOString(),
-        // Normalisation priorité et statut
-        priorite: mapPriorityToDisplay(t.priorite_predite || t.priorite),
+        // ✅ CORRECTION : on utilise la priorité courante (t.priorite) et non plus la prédite
+        priorite: mapPriorityToDisplay(t.priorite),
         status: normalizeStatus(t.status),
         attachments: t.attachments || []
       }));
@@ -432,11 +424,10 @@ function UnifiedDashboard() {
   const isITConsultant = role === "it_consultant" || role === "Consultant IT" || role === "it";
   const currentDate = useMemo(() => new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }), []);
 
-  // Correction du comptage : "Non résolus" = tous les tickets qui ne sont pas "Résolu"
   const stats = useMemo(() => ({
     total: tickets.length,
     resolved: tickets.filter(t => t.status === "Résolu").length,
-    unresolved: tickets.filter(t => t.status !== "Résolu").length,   // <-- corrigé ici
+    unresolved: tickets.filter(t => t.status !== "Résolu").length,
   }), [tickets]);
 
   const filteredAndSortedTickets = useMemo(() => {
@@ -498,7 +489,6 @@ function UnifiedDashboard() {
 
   const handleStatusChange = async (ticketId, newStatus) => {
     try {
-      // On envoie le nouveau statut au backend (on suppose qu'il accepte les chaînes françaises)
       await API.put(`/tickets/${ticketId}`, { status: newStatus });
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
     } catch (err) { 
@@ -617,7 +607,7 @@ function UnifiedDashboard() {
                         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, background: COLORS.primaryLight, color: COLORS.primary, borderRadius: 6, fontWeight: 700, fontSize: 12 }}>
                           {typeof ticket.id === 'string' ? ticket.id.slice(-4) : ticket.id}
                         </span>
-                       </td>
+                      </td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, fontWeight: 500, color: COLORS.dark }}>{ticket.type}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.gray, maxWidth: 250, wordBreak: "break-word" }}>{ticket.description}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
