@@ -629,7 +629,7 @@ function UnifiedDashboard() {
                             ticket.attachments.map((att, idx) => (
                               <a
                                 key={idx}
-                                href={att.url}
+                                href={att.url?.startsWith("http") ? att.url : `${API_CONFIG.BASE_URL}${att.url}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{
