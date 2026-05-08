@@ -82,7 +82,7 @@ export default function Settings() {
         return;
       }
       setUserId(userData._id);
-      const fullName = userData.name || "";
+      const fullName = userData.username || userData.name || "";
       const nameParts = fullName.split(" ");
       const prenom = nameParts[0] || "";
       const nom = nameParts.slice(1).join(" ") || "";
@@ -90,7 +90,7 @@ export default function Settings() {
         nom: nom,
         prenom: prenom,
         email: userData.email || "",
-        role: "IT Consultant",
+        role: userData.role === "it_consultant" ? "IT Consultant" : (userData.role === "developer" ? "Développeur" : "IT Consultant"),
         phone: userData.phone || "",
         location: userData.location || "",
       });
@@ -127,7 +127,8 @@ export default function Settings() {
     setError("");
     try {
       const fullName = `${user.prenom} ${user.nom}`.trim();
-      await API.put(`/user/${userId}`, {
+      await API.put(`/user/update/${userId}`, {
+        username: fullName,
         name: fullName,
         email: user.email,
         phone: user.phone,
@@ -136,6 +137,7 @@ export default function Settings() {
       const userStr = localStorage.getItem('user');
       if (userStr) {
         const userData = JSON.parse(userStr);
+        userData.username = fullName;
         userData.name = fullName;
         userData.email = user.email;
         userData.phone = user.phone;
@@ -176,7 +178,7 @@ export default function Settings() {
     setLoading(true);
     setError("");
     try {
-      await API.put(`/user/${userId}`, {
+      await API.put(`/user/update/${userId}`, {
         password: passwords.newPassword
       });
       setPwdSaved(true);
