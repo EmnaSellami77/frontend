@@ -142,7 +142,7 @@ export default function DeveloperSettings() {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) return;
     setLoading(true);
     try {
-      await API.delete(`/user/${userId}`);
+      await API.delete(`/user/delete/${userId}`);
       localStorage.clear();
       navigate("/");
     } catch (err) {
