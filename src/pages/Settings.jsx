@@ -203,7 +203,7 @@ export default function Settings() {
     setLoading(true);
     setError("");
     try {
-      await API.post(`/user/delete-account/${userId}`);
+      await API.post(`/user/delete-me`);
       localStorage.clear();
       navigate("/");
     } catch (err) {
