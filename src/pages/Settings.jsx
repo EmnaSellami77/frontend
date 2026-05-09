@@ -127,7 +127,8 @@ export default function Settings() {
     setError("");
     try {
       const fullName = `${user.prenom} ${user.nom}`.trim();
-      await API.put(`/user/update/${userId}`, {
+      
+      await API.put(`/user/${userId}`, {
         username: fullName,
         name: fullName,
         email: user.email,
@@ -178,7 +179,7 @@ export default function Settings() {
     setLoading(true);
     setError("");
     try {
-      await API.put(`/user/update/${userId}`, {
+      await API.put(`/user/${userId}`, {
         password: passwords.newPassword
       });
       setPwdSaved(true);
