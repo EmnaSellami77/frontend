@@ -192,6 +192,7 @@ export default function Settings() {
     }
   };
 
+  // ✅ ROUTE DELETE CORRECTE
   const handleDeleteAccount = async () => {
     if (!userId) {
       setError("Session expirée");
@@ -199,11 +200,13 @@ export default function Settings() {
     }
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) return;
     setLoading(true);
+    setError("");
     try {
       await API.delete(`/user/delete/${userId}`);
       localStorage.clear();
       navigate("/");
     } catch (err) {
+      console.error("Erreur suppression:", err);
       setError(err.response?.data?.error || "Erreur lors de la suppression du compte");
       setTimeout(() => setError(""), 3000);
     } finally {
