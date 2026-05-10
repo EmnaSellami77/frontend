@@ -275,7 +275,7 @@ export default function DeveloperDashboard() {
           </svg>
           <div>
             <h2 style={styles.title}>Developer Dashboard</h2>
-            {currentUser && <p style={styles.userInfo}>Connecté en tant que : {currentUser.name}</p>}
+            {currentUser && <p style={styles.userInfo}>Connecté en tant que développeur {currentUser.name}</p>}
           </div>
         </div>
         <div style={styles.headerRight}>
