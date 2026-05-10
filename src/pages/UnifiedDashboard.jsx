@@ -37,7 +37,7 @@ const COLORS = {
 };
 
 const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_API_URL || 'https://back2-ys67.onrender.com/tickets/predict',
+  BASE_URL: process.env.REACT_APP_API_URL || 'https://back2-ys67.onrender.com',
   ENDPOINTS: { PREDICT: '/tickets/predict' },
   TIMEOUT: 10000
 };
