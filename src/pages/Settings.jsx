@@ -128,7 +128,7 @@ export default function Settings() {
     try {
       const fullName = `${user.prenom} ${user.nom}`.trim();
       
-      await API.put(`/user/${userId}`, {
+      await API.put(`/user/update/${userId}`, {
         username: fullName,
         name: fullName,
         email: user.email,
@@ -179,7 +179,7 @@ export default function Settings() {
     setLoading(true);
     setError("");
     try {
-      await API.put(`/user/${userId}`, {
+      await API.put(`/user/update/${userId}`, {
         password: passwords.newPassword
       });
       setPwdSaved(true);
@@ -193,7 +193,6 @@ export default function Settings() {
     }
   };
 
-  // ✅ ROUTE DELETE CORRECTE
   const handleDeleteAccount = async () => {
     if (!userId) {
       setError("Session expirée");
@@ -203,7 +202,7 @@ export default function Settings() {
     setLoading(true);
     setError("");
     try {
-      await API.post(`/user/delete-me`);
+      await API.delete(`/user/delete-me`);
       localStorage.clear();
       navigate("/");
     } catch (err) {

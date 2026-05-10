@@ -37,7 +37,7 @@ export default function DeveloperSettings() {
         return;
       }
       setUserId(user._id);
-      const username = user.name || "";
+      const username = user.name || user.username || "";
       const email = user.email || "";
       setFormData(prev => ({
         ...prev,
@@ -69,13 +69,11 @@ export default function DeveloperSettings() {
     setErrorMessage("");
     
     try {
-      // Mettre à jour le profil
-      await API.put(`/user/${userId}`, {
+      await API.put(`/user/update/${userId}`, {
         name: formData.username,
         email: formData.email
       });
 
-      // Changer le mot de passe si fourni
       if (formData.newPassword) {
         if (formData.newPassword !== formData.confirmPassword) {
           setErrorMessage("Les mots de passe ne correspondent pas");
@@ -87,7 +85,7 @@ export default function DeveloperSettings() {
           setLoading(false);
           return;
         }
-        await API.put(`/user/${userId}`, {
+        await API.put(`/user/update/${userId}`, {
           password: formData.newPassword
         });
       }
@@ -95,7 +93,6 @@ export default function DeveloperSettings() {
       setSuccessMessage("Modifications enregistrées avec succès !");
       setTimeout(() => setSuccessMessage(""), 3000);
       
-      // Mettre à jour localStorage
       const userStr = localStorage.getItem("user");
       if (userStr) {
         const userData = JSON.parse(userStr);
@@ -142,7 +139,7 @@ export default function DeveloperSettings() {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) return;
     setLoading(true);
     try {
-      await API.delete(`/user/delete/${userId}`);
+      await API.delete(`/user/delete-me`);
       localStorage.clear();
       navigate("/");
     } catch (err) {
@@ -162,7 +159,6 @@ export default function DeveloperSettings() {
     navigate("/developer/dashboard");
   };
 
-  // Styles (inchangés, sans la section notifications)
   const styles = {
     page: {
       backgroundColor: "#f9fafb",
