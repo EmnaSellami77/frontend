@@ -392,9 +392,9 @@ function UnifiedDashboard() {
         id: t._id || `temp-${Math.random()}`,
         type: t.type_personnalise || t.type || "Standard",
         description: t.description || t.titre || "Aucune description",
+        // ✅ Utilise le nom du développeur (user_name) au lieu de l'email
         utilisateur: t.user_name || t.user_email || "Inconnu",
         dateCreation: t.dateCreation || t.createdAt || new Date().toISOString(),
-        // ✅ CORRECTION : on utilise la priorité courante (t.priorite) et non plus la prédite
         priorite: mapPriorityToDisplay(t.priorite),
         status: normalizeStatus(t.status),
         attachments: t.attachments || []
@@ -612,7 +612,9 @@ function UnifiedDashboard() {
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.gray, maxWidth: 250, wordBreak: "break-word" }}>{ticket.description}</td>
                       <td style={{ padding: "13px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.primaryDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.white, fontSize: 11, fontWeight: 700 }}>{ticket.utilisateur[0]?.toUpperCase()}</div>
+                          <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.primaryDark})`, display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.white, fontSize: 11, fontWeight: 700 }}>
+                            {ticket.utilisateur?.[0]?.toUpperCase() || "?"}
+                          </div>
                           <span style={{ color: COLORS.dark, fontWeight: 500 }}>{ticket.utilisateur}</span>
                         </div>
                       </td>
