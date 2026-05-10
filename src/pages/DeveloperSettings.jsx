@@ -67,7 +67,7 @@ export default function DeveloperSettings() {
 
     setLoading(true);
     setErrorMessage("");
-    
+
     try {
       await API.put(`/user/update/${userId}`, {
         name: formData.username,
@@ -92,7 +92,7 @@ export default function DeveloperSettings() {
 
       setSuccessMessage("Modifications enregistrées avec succès !");
       setTimeout(() => setSuccessMessage(""), 3000);
-      
+
       const userStr = localStorage.getItem("user");
       if (userStr) {
         const userData = JSON.parse(userStr);
@@ -100,12 +100,12 @@ export default function DeveloperSettings() {
         userData.email = formData.email;
         localStorage.setItem("user", JSON.stringify(userData));
       }
-      
+
       setOriginalData({
         username: formData.username,
         email: formData.email
       });
-      
+
       setFormData(prev => ({
         ...prev,
         currentPassword: "",
@@ -402,12 +402,14 @@ export default function DeveloperSettings() {
       outline: "none",
       transition: "all 0.2s ease",
     },
+    // ✅ deleteSection est maintenant un style de carte séparée
     deleteSection: {
-      marginTop: "30px",
+      marginTop: "20px",
       padding: "20px",
       backgroundColor: "#fef2f2",
-      borderRadius: "12px",
+      borderRadius: "20px",
       border: "1px solid #fee2e2",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
     },
     deleteButton: {
       display: "flex",
@@ -552,6 +554,7 @@ export default function DeveloperSettings() {
       </div>
 
       <div style={styles.container}>
+        {/* ✅ FORM : contient uniquement les champs et les boutons save/cancel */}
         <form onSubmit={handleSubmit} style={styles.formCard}>
           {activeTab === "profile" && (
             <div>
@@ -610,21 +613,6 @@ export default function DeveloperSettings() {
                   style={styles.input}
                   disabled={loading}
                 />
-              </div>
-
-              <div style={styles.deleteSection}>
-                <button type="button" onClick={handleDeleteAccount} style={styles.deleteButton} disabled={loading}>
-                  <svg style={styles.deleteIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    <line x1="10" y1="11" x2="10" y2="17" />
-                    <line x1="14" y1="11" x2="14" y2="17" />
-                  </svg>
-                  Supprimer mon compte
-                </button>
-                <p style={styles.deleteWarning}>
-                  Cette action est irréversible. Toutes vos données seront supprimées.
-                </p>
               </div>
             </div>
           )}
@@ -701,6 +689,29 @@ export default function DeveloperSettings() {
           </div>
         </form>
       </div>
+
+      {/* ✅ DELETE SECTION : EN DEHORS du <form>, dans son propre bloc */}
+      {activeTab === "profile" && (
+        <div style={styles.deleteSection}>
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            style={styles.deleteButton}
+            disabled={loading}
+          >
+            <svg style={styles.deleteIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+            Supprimer mon compte
+          </button>
+          <p style={styles.deleteWarning}>
+            Cette action est irréversible. Toutes vos données seront supprimées.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
